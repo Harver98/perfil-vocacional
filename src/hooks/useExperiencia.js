@@ -16,6 +16,8 @@ const estadoInicial = {
   sesionId: null,
   municipio: '',
   edad: '',
+  tipo_zona: 'cabecera', 
+  nombre_zona: '',       
   gruposPoblacionales: [],
   programaId: null,
   respuestas: [],
@@ -24,7 +26,6 @@ const estadoInicial = {
   error: null,
 }
 
-// Genera un ID local cuando no hay Supabase configurado
 const demoId = () => 'demo-' + Math.random().toString(36).slice(2, 10)
 
 export function useExperiencia() {
@@ -43,12 +44,14 @@ export function useExperiencia() {
   const guardarInfoGeneral = useCallback(async (datos) => {
     actualizar({ guardando: true, error: null })
 
-    // MODO DEMO: sin .env.local configurado, funciona sin guardar datos
+    // MODO DEMO
     if (!supabaseConfigurado) {
       actualizar({
         sesionId: demoId(),
         municipio: datos.municipio,
         edad: datos.edad,
+        tipo_zona: datos.tipoZona || 'cabecera', // 🔄 Acoplado con camelCase
+        nombre_zona: datos.nombreZona || '',     // 🔄 Acoplado con camelCase
         gruposPoblacionales: datos.gruposPoblacionales,
         guardando: false,
         paso: PASOS.SELECCION_PROGRAMA,
@@ -57,6 +60,10 @@ export function useExperiencia() {
     }
 
     try {
+      // 🚨 PARCHE DE ACOPLAMIENTO: Capturamos las variables del formulario en camelCase
+      const zonaFormateada = (datos.tipoZona || 'cabecera').toLowerCase().trim(); 
+      const nombreZonaFormateado = (datos.nombreZona || '').trim();               
+
       const { data, error } = await supabase
         .from('sesiones')
         .insert({
@@ -65,6 +72,9 @@ export function useExperiencia() {
           grupos_poblacionales: datos.gruposPoblacionales,
           programa: 'pendiente',
           completado: false,
+          // Mapeamos los strings limpios a las columnas físicas de Supabase
+          tipo_zona: zonaFormateada,
+          nombre_zona: nombreZonaFormateado,
         })
         .select('id')
         .single()
@@ -75,6 +85,8 @@ export function useExperiencia() {
         sesionId: data.id,
         municipio: datos.municipio,
         edad: datos.edad,
+        tipo_zona: zonaFormateada,
+        nombre_zona: nombreZonaFormateado,
         gruposPoblacionales: datos.gruposPoblacionales,
         guardando: false,
         paso: PASOS.SELECCION_PROGRAMA,
@@ -109,7 +121,6 @@ export function useExperiencia() {
 
     const resultado = calcularResultados(estado.programaId, respuestas)
 
-    // MODO DEMO: mostrar resultado sin guardar en BD
     if (!supabaseConfigurado || estado.sesionId?.startsWith('demo-')) {
       actualizar({
         respuestas,
@@ -121,14 +132,12 @@ export function useExperiencia() {
     }
 
     try {
-      // Guardar respuestas individuales
       const respuestasDB = formatearRespuestasParaDB(estado.sesionId, estado.programaId, respuestas)
       const { error: errRespuestas } = await supabase
         .from('respuestas')
         .insert(respuestasDB)
       if (errRespuestas) throw errRespuestas
 
-      // Guardar resultado calculado
       const { error: errResultado } = await supabase
         .from('resultados')
         .insert({
@@ -144,7 +153,7 @@ export function useExperiencia() {
         })
       if (errResultado) throw errResultado
 
-      // Marcar sesión como completada
+      // Marcar sesión como completada (¡Esto activa las estadísticas!)
       await supabase
         .from('sesiones')
         .update({ completado: true })
@@ -158,12 +167,11 @@ export function useExperiencia() {
       })
     } catch (err) {
       console.error('Error guardando resultados:', err)
-      // Mostrar resultado aunque falle el guardado
       actualizar({
         respuestas,
         resultado,
         guardando: false,
-        error: 'Resultado calculado, pero no se pudo guardar en la base de datos.',
+        error: 'Resultado calculated, pero no se pudo guardar en la base de datos.',
         paso: PASOS.RESULTADO,
       })
     }
