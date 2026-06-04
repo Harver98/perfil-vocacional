@@ -50,7 +50,8 @@ function LayoutConHeader({ children, paso }) {
 export default function App() {
   const exp = useExperiencia()
 
-  const esDashboard = window.location.pathname === '/dashboard'
+  const path Limpio = window.location.pathname.replace(/\/$/, "");
+  const esDashboard = pathLimpio === '/dashboard';
   if (esDashboard) return <Dashboard />
 
   return (
