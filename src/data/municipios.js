@@ -10,6 +10,12 @@ export const MUNICIPIOS = [
   'Toledo', 'Villa Caro', 'Villa del Rosario',
 ].sort()
 
+export const TIPOS_ZONA = [
+  { id: 'cabecera', label: 'Cabecera Municipal (Casco Urbano)' },
+  { id: 'corregimiento', label: 'Corregimiento' },
+  { id: 'vereda', label: 'Vereda' }
+]
+
 export const GRUPOS_POBLACIONALES = [
   { id: 'campesino',       label: 'Campesino/a',               emoji: '🌾' },
   { id: 'victima',         label: 'Víctima del conflicto',      emoji: '🕊️' },

@@ -46,14 +46,12 @@ function LoginUIS({ onLogin }) {
     setCargando(true)
     setError('')
     try {
-      // 1. Autenticar con Supabase Auth (email + contraseña)
       const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email:    email.trim().toLowerCase(),
+        email:     email.trim().toLowerCase(),
         password: password,
       })
       if (authError) throw authError
 
-      // 2. Verificar que el usuario está en la tabla admins
       const { data: adminData, error: adminError } = await supabase
         .from('admins')
         .select('activo, nombre')
@@ -61,7 +59,6 @@ function LoginUIS({ onLogin }) {
         .single()
 
       if (adminError || !adminData?.activo) {
-        // Cerrar sesión si no es admin
         await supabase.auth.signOut()
         throw new Error('Tu cuenta no tiene acceso al dashboard.')
       }
@@ -88,15 +85,12 @@ function LoginUIS({ onLogin }) {
       className="min-h-screen flex flex-col items-center justify-center px-4"
       style={{ background: 'linear-gradient(160deg, #5b2d8e 0%, #7b3fa8 50%, #3d7820 100%)' }}
     >
-      {/* Orbes decorativos */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full opacity-10"  style={{ background: UIS_GREEN, filter: 'blur(80px)' }} />
-        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-10" style={{ background: '#fff',     filter: 'blur(60px)' }} />
+        <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full opacity-10" style={{ background: '#fff',      filter: 'blur(60px)' }} />
       </div>
 
       <div className="relative z-10 w-full max-w-sm">
-
-        {/* Logos institucionales */}
         <div className="flex items-center justify-between mb-8">
           <div className="bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2 border border-white/20">
             <p className="text-white/60 font-body text-xs">Ministerio de</p>
@@ -118,7 +112,6 @@ function LoginUIS({ onLogin }) {
           </div>
         </div>
 
-        {/* Card de login */}
         <div className="bg-white rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-7">
             <div
@@ -135,7 +128,6 @@ function LoginUIS({ onLogin }) {
             </div>
           </div>
 
-          {/* Campo email */}
           <div className="mb-3">
             <label className="block text-xs font-display font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Correo institucional
@@ -152,7 +144,6 @@ function LoginUIS({ onLogin }) {
             />
           </div>
 
-          {/* Campo contraseña */}
           <div className="mb-5">
             <label className="block text-xs font-display font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
               Contraseña
@@ -178,14 +169,12 @@ function LoginUIS({ onLogin }) {
             </div>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-2.5 text-red-600 text-sm font-body mb-4">
               ⚠️ {error}
             </div>
           )}
 
-          {/* Botón ingresar */}
           <button
             onClick={intentarLogin}
             disabled={!email || !password || cargando}
@@ -275,7 +264,6 @@ export default function Dashboard() {
   const [eliminando,    setEliminando]    = useState(false)
   const [mensajeElim,   setMensajeElim]   = useState(null)
 
-  // Verificar sesión activa al cargar
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
@@ -330,15 +318,19 @@ export default function Dashboard() {
   const cargarDatos = async () => {
     setCargando(true)
     try {
+      // Optimizamos cargando directamente las vistas e índices que creamos en Supabase
+      const { data: resumen } = await supabase.from('vista_resumen_general').select('*').single()
+      const { data: municipiosVista } = await supabase.from('vista_por_municipio').select('*')
+      const { data: ruralVista } = await supabase.from('vista_analisis_rural').select('*')
+
+      // Mantenemos la carga de apoyo para los gráficos analíticos y de edad de la tabla base
       const { data: sesiones }   = await supabase.from('sesiones').select('*').eq('completado', true)
       const { data: resultados } = await supabase.from('resultados').select('*')
 
-      const porMunicipio = {}, porPrograma = {}
+      const porPrograma = {}
       const porEdad = { '14-17':0,'18-25':0,'26-35':0,'36-45':0,'46+':0 }
-      const porGrupo = {}
 
       sesiones?.forEach(s => {
-        porMunicipio[s.municipio] = (porMunicipio[s.municipio] || 0) + 1
         porPrograma[s.programa]   = (porPrograma[s.programa]   || 0) + 1
         const e = parseInt(s.edad)
         if      (e <= 17) porEdad['14-17']++
@@ -346,34 +338,30 @@ export default function Dashboard() {
         else if (e <= 35) porEdad['26-35']++
         else if (e <= 45) porEdad['36-45']++
         else              porEdad['46+']++
-        s.grupos_poblacionales?.forEach(g => { porGrupo[g] = (porGrupo[g] || 0) + 1 })
       })
 
-      let sumSer=0, sumHacer=0, sumSaber=0, sumAfin=0
-      resultados?.forEach(r => { sumSer+=r.puntaje_ser; sumHacer+=r.puntaje_hacer; sumSaber+=r.puntaje_saber; sumAfin+=r.afinidad_total })
       const n = resultados?.length || 1
 
-      const municipioConResultados = Object.entries(porMunicipio)
-        .sort(([,a],[,b]) => b-a).slice(0,10)
-        .map(([mun, count]) => {
-          const sesM  = sesiones.filter(s => s.municipio === mun)
-          const idsM  = sesM.map(s => s.id)
-          const resM  = resultados?.filter(r => idsM.includes(r.sesion_id)) || []
-          const afin  = resM.length ? Math.round(resM.reduce((a,r)=>a+r.afinidad_total,0)/resM.length) : 0
-          const progs = {}; sesM.forEach(s => { progs[s.programa] = (progs[s.programa]||0)+1 })
-          const progD = Object.entries(progs).sort(([,a],[,b])=>b-a)[0]?.[0] || '-'
-          return { municipio: mun, total: count, afinidad: afin, programa: PROGRAMAS_LABEL[progD]||progD }
-        })
-
+      // Mapeamos los datos de las vistas directamente sin sobrecargar JS
       setDatos({
-        total:            sesiones?.length || 0,
-        municipios:       Object.keys(porMunicipio).length,
-        afinidadPromedio: Math.round(sumAfin/n),
-        programaMasPopular: Object.entries(porPrograma).sort(([,a],[,b])=>b-a)[0]?.[0],
-        promedios: { ser: Math.round(sumSer/n), hacer: Math.round(sumHacer/n), saber: Math.round(sumSaber/n) },
+        total: resumen?.total_participantes || 0,
+        municipios: resumen?.total_municipios || 0,
+        porcentajeRural: resumen?.porcentaje_participacion_rural || 0,
+        afinidadPromedio: resumen?.afinidad_promedio_global || 0,
+        programaMasPopular: resumen?.programa_mas_popular,
+        promedios: { ser: resumen?.promedio_ser || 0, hacer: resumen?.promedio_hacer || 0, saber: resumen?.promedio_saber || 0 },
         porPrograma: Object.entries(porPrograma).map(([k,v]) => ({ name: PROGRAMAS_LABEL[k]||k, value: v })),
         porEdad:  Object.entries(porEdad).filter(([,v])=>v>0).map(([k,v]) => ({ rango:k, total:v })),
-        municipioConResultados,
+        municipioConResultados: municipiosVista?.map(m => ({
+          municipio: m.municipio,
+          total: m.total_participantes,
+          urbanos: m.participantes_urbanos,
+          corregimiento: m.participantes_corregimiento,
+          vereda: m.participantes_vereda,
+          programa: PROGRAMAS_LABEL[m.programa_dominante] || m.programa_dominante,
+          afinidad: m.afinidad_promedio
+        })) || [],
+        ruralDetalle: ruralVista || [],
         resultadosPorPrograma: ['trabajo_social','agroindustrial','administracion'].map(pid => {
           const r = resultados?.filter(x => x.programa===pid) || []
           const nn = r.length||1
@@ -397,6 +385,7 @@ export default function Dashboard() {
   const VISTAS = [
     { label: '📋 Resumen General', id: 0 },
     { label: '🗺️ Por Municipio',   id: 1 },
+    { label: '🌾 Cobertura Rural',  id: 3 },
     { label: '📈 Competencias',    id: 2 },
   ]
 
@@ -462,14 +451,14 @@ export default function Dashboard() {
       ) : (
         <div className="max-w-5xl mx-auto px-5 py-8">
 
-          {/* VISTA 1 */}
+          {/* VISTA 0: RESUMEN GENERAL */}
           {vista===0 && (
             <div className="space-y-6 animate-fade-in">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <StatCard emoji="👥" label="Participantes totales"  value={datos?.total}                                          accent={UIS_GREEN}  />
-                <StatCard emoji="📍" label="Municipios"             value={datos?.municipios}                                     accent={UIS_PURPLE} />
-                <StatCard emoji="🎯" label="Afinidad promedio"      value={datos?.afinidadPromedio ? `${datos.afinidadPromedio}%` : '—'} accent={UIS_BLUE}   />
-                <StatCard emoji="🏆" label="Carrera más popular"    value={PROGRAMAS_LABEL[datos?.programaMasPopular] || '—'}    accent={UIS_ORANGE} />
+                <StatCard emoji="👥" label="Participantes totales"  value={datos?.total}                                      accent={UIS_GREEN}  />
+                <StatCard emoji="📍" label="Municipios"             value={datos?.municipios}                                 accent={UIS_PURPLE} />
+                <StatCard emoji="🌾" label="Índice Ruralidad"        value={datos?.porcentajeRural ? `${datos.porcentajeRural}%` : '0%'} accent={UIS_ORANGE} />
+                <StatCard emoji="🏆" label="Carrera más popular"    value={PROGRAMAS_LABEL[datos?.programaMasPopular] || '—'}    accent={UIS_BLUE} />
               </div>
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
@@ -519,32 +508,34 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* VISTA 2 */}
+          {/* VISTA 1: POR MUNICIPIO */}
           {vista===1 && (
             <div className="space-y-6 animate-fade-in">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h3 className="font-display font-bold text-gray-800 mb-4">Participantes por municipio (Top 10)</h3>
+                <h3 className="font-display font-bold text-gray-800 mb-4">Distribución Urbana vs Rural por Municipio</h3>
                 {datos?.municipioConResultados?.length ? (
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={datos.municipioConResultados} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" horizontal={false} />
-                      <XAxis type="number" tick={{fontSize:11,fontFamily:'DM Sans'}} />
-                      <YAxis type="category" dataKey="municipio" width={110} tick={{fontSize:11,fontFamily:'DM Sans'}} />
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={datos.municipioConResultados}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                      <XAxis dataKey="municipio" tick={{fontSize:11,fontFamily:'DM Sans'}} />
+                      <YAxis tick={{fontSize:11,fontFamily:'DM Sans'}} />
                       <Tooltip />
-                      <Bar dataKey="total" fill={UIS_GREEN} radius={[0,6,6,0]} name="Participantes" />
+                      <Legend />
+                      <Bar dataKey="urbanos" name="Cabecera Urbana" stackId="a" fill={UIS_BLUE} />
+                      <Bar dataKey="corregimiento" name="Corregimientos" stackId="a" fill={UIS_PURPLE} />
+                      <Bar dataKey="vereda" name="Veredas (Disperso)" stackId="a" fill={UIS_GREEN} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : <div className="h-52 flex items-center justify-center text-gray-300 text-sm font-body">Sin datos aún</div>}
               </div>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-                  <h3 className="font-display font-bold text-gray-800">Detalle por municipio</h3>
-                  <span className="text-xs font-body text-gray-400">{datos?.municipioConResultados?.length??0} municipios</span>
+                  <h3 className="font-display font-bold text-gray-800">Detalle demográfico municipal</h3>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead style={{background:UIS_GREEN_BG}}>
-                      <tr>{['Municipio','Participantes','Programa dominante','Afinidad promedio'].map(h=>(
+                      <tr>{['Municipio','Total','Urbano','Correg.','Vereda','Programa Dominante','Afinidad'].map(h=>(
                         <th key={h} className="px-5 py-3 text-left text-xs font-display font-semibold uppercase tracking-wider" style={{color:UIS_GREEN_DARK}}>{h}</th>
                       ))}</tr>
                     </thead>
@@ -552,11 +543,14 @@ export default function Dashboard() {
                       {datos?.municipioConResultados?.map((m,i)=>(
                         <tr key={i} className="hover:bg-gray-50 transition-colors">
                           <td className="px-5 py-3 font-body text-sm font-medium text-gray-900">{m.municipio}</td>
-                          <td className="px-5 py-3 font-body text-sm text-gray-600">{m.total}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-900 font-bold">{m.total}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-600">{m.urbanos}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-600">{m.corregimiento}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-600">{m.vereda}</td>
                           <td className="px-5 py-3 font-body text-sm text-gray-600">{m.programa}</td>
                           <td className="px-5 py-3">
                             <span className="inline-flex px-2.5 py-0.5 rounded-full text-xs font-display font-semibold"
-                              style={m.afinidad>=70 ? {background:UIS_GREEN_BG,color:UIS_GREEN_DARK} : {background:'#fff4e6',color:UIS_ORANGE}}>
+                              style={m.afinidad>70 ? {background:UIS_GREEN_BG,color:UIS_GREEN_DARK} : {background:'#fff4e6',color:UIS_ORANGE}}>
                               {m.afinidad}%
                             </span>
                           </td>
@@ -564,13 +558,55 @@ export default function Dashboard() {
                       ))}
                     </tbody>
                   </table>
-                  {!datos?.municipioConResultados?.length && <div className="py-12 text-center text-gray-300 font-body text-sm">Sin datos aún</div>}
                 </div>
               </div>
             </div>
           )}
 
-          {/* VISTA 3 */}
+          {/* VISTA 3: COBERTURA RURAL DETALLADA */}
+          {vista===3 && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h3 className="font-display font-bold text-gray-800">Foco Rural: Diagnóstico en Veredas y Corregimientos</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Filtro exclusivo de sectores fuera de las cabeceras municipales</p>
+                  </div>
+                  <span className="text-xs font-display font-bold bg-amber-50 text-amber-700 px-3 py-1 rounded-xl border border-amber-200">
+                    📍 {datos?.ruralDetalle?.length || 0} Comunidades Registradas
+                  </span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>{['Municipio','Tipo de Zona','Comunidad / Sector','Encuestados','Preferencia Vocacional','Afinidad'].map(h=>(
+                        <th key={h} className="px-5 py-3 text-left text-xs font-display font-semibold uppercase text-gray-500 tracking-wider">{h}</th>
+                      ))}</tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {datos?.ruralDetalle?.map((r,i)=>(
+                        <tr key={i} className="hover:bg-gray-50/80 transition-colors">
+                          <td className="px-5 py-3 font-body text-sm font-medium text-gray-900">{r.municipio}</td>
+                          <td className="px-5 py-3 font-body text-xs">
+                            <span className={`px-2 py-0.5 rounded-full font-semibold ${r.zona_tipo === 'Vereda' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-purple-50 text-purple-700 border border-purple-100'}`}>
+                              {r.zona_tipo}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-700 font-medium">{r.comunidad}</td>
+                          <td className="px-5 py-3 font-body text-sm font-bold text-gray-600">{r.total_participantes}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-600">{PROGRAMAS_LABEL[r.programa_preferido] || r.programa_preferido}</td>
+                          <td className="px-5 py-3 font-body text-sm text-gray-900 font-semibold">{r.afinidad_promedio}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {!datos?.ruralDetalle?.length && <div className="py-12 text-center text-gray-300 font-body text-sm">No se han registrado datos de impacto rural todavía</div>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VISTA 2: COMPETENCIAS */}
           {vista===2 && (
             <div className="space-y-6 animate-fade-in">
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
