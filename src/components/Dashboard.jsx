@@ -310,7 +310,7 @@ export default function Dashboard() {
   }
 
   // ── Engine de Filtros Dinámicos (Uso de useMemo) ───────────────────────────
-  const datosFiltrados = useMemo(() => {
+ const datosFiltrados = useMemo(() => {
     if (!rawData.participantes) return null
 
     // 1. Filtrar Participantes Raíz
@@ -319,10 +319,10 @@ export default function Dashboard() {
       if (filtroActor && p.tipo_actor !== filtroActor) return false
       if (filtroCompletado && !p.completado) return false
       
-      // ✅ CORRECCIÓN EDAD: Calibración matemática de rangos de edad enteros
+      // ✅ CALIBRACIÓN EDAD
       if (filtroEdad) {
         const e = parseInt(p.edad, 10)
-        if (isNaN(e)) return false // Si no hay edad registrada, se descarta si hay filtro activo
+        if (isNaN(e)) return false
         if (filtroEdad === '< 18' && e >= 18) return false
         if (filtroEdad === '18-25' && (e < 18 || e > 25)) return false
         if (filtroEdad === '26-35' && (e < 26 || e > 35)) return false
@@ -330,7 +330,7 @@ export default function Dashboard() {
         if (filtroEdad === '46+' && e <= 45) return false
       }
 
-      // ✅ CORRECCIÓN PROGRAMA: Busca coincidencia en cualquier orden de preferencia (1 o 2)
+      // ✅ REPARACIÓN FILTRO PROGRAMA
       if (filtroPrograma) {
         const tieneProg = rawData.progOrden?.some(
           po => po.participante_id === p.id && po.programa === filtroPrograma
@@ -374,7 +374,6 @@ export default function Dashboard() {
       else if (e > 45) porEdad['46+']++
     })
 
-    // Construir desglose analítico de municipios
     const municipioDetalle = Object.entries(porMunicipio).map(([mun, tot]) => {
       const pMun = partFiltrados.filter(p => p.municipio === mun)
       return {
@@ -391,7 +390,6 @@ export default function Dashboard() {
       }
     }).sort((a,b) => b.total - a.total)
 
-    // Agrupación de Líneas y Electivas Top
     const lCount = {}
     linFiltrados.forEach(l => { lCount[l.linea] = (lCount[l.linea] || 0) + 1 })
     const lineasTop = Object.entries(lCount).map(([linea, total]) => ({ linea, total })).sort((a,b)=>b.total-a.total).slice(0, 10)
@@ -400,22 +398,22 @@ export default function Dashboard() {
     elFiltrados.forEach(e => { eCount[e.electiva] = (eCount[e.electiva] || 0) + 1 })
     const electivasTop = Object.entries(eCount).map(([electiva, total]) => ({ electiva, total })).sort((a,b)=>b.total-a.total).slice(0, 8)
 
-    // Orden de Programas Preferidos (Posición 1)
     const progPref = {}
     poFiltrados.filter(p => p.orden === 1).forEach(p => {
       progPref[p.programa] = (progPref[p.programa] || 0) + 1
     })
 
-    // ── PROCESAMIENTO PESTAÑA ÁNALISIS
+    // ── CORRECCIÓN EN PROCESAMIENTO PESTAÑA ÁNALISIS
     const agruparCompetencias = (coleccion) => {
       const conteo = {}
       coleccion.forEach(c => {
         if(!c.competencia) return
-        const key = `${c.categoria || 'SABER'}-${c.competencia}`
+        // Cambiado a '|||' para prevenir roturas con los guiones propios del texto
+        const key = `${c.categoria || 'SABER'}|||${c.competencia}`
         conteo[key] = (conteo[key] || 0) + 1
       })
       return Object.entries(conteo).map(([llave, total]) => {
-        const [categoria, competencia] = llave.split('-')
+        const [categoria, competencia] = llave.split('|||')
         return { categoria, competencia, total }
       }).sort((a,b)=> b.total - a.total)
     }
@@ -423,10 +421,11 @@ export default function Dashboard() {
     const competenciasIngreso = agruparCompetencias(ingFiltrados)
     const competenciasEgreso = agruparCompetencias(egFiltrados)
 
-    // Desglose dinámico de Lengua Barí basado en las respuestas reales filtradas
+    // ✅ CORRECCIÓN DE LLAVE RELACIONAL (Se cambia sesion_id por participante_id o id según tu base de datos)
     const respuestasLenguaFiltradas = (rawData.respuestasTabla || []).filter(
-      r => targetIds.has(r.sesion_id) && r.importancia_lengua
+      r => (targetIds.has(r.participante_id) || targetIds.has(r.sesion_id)) && r.importancia_lengua
     )
+    
     const conteoLengua = {}
     respuestasLenguaFiltradas.forEach(r => {
       conteoLengua[r.importancia_lengua] = (conteoLengua[r.importancia_lengua] || 0) + 1
@@ -454,8 +453,13 @@ export default function Dashboard() {
       lineasTop,
       electivasTop,
       progPref: Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
+      
+      // ✅ BLINDAJE DE VARIABLES (Disponibles tanto en inglés como en español para tu JSX)
       competenciasIngreso,
       competenciasEgreso,
+      competenciesIngreso: competenciasIngreso,
+      competenciesEgreso: competenciasEgreso,
+      
       analisisLengua,
       vistaPrograma: rawData.vistaPrograma || []
     }
