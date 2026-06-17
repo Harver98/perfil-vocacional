@@ -444,6 +444,11 @@ export default function Dashboard() {
         })
 
     return {
+      // ✅ Exponemos las listas ya filtradas para que las vistas de tabla (Participantes, Matriz de Programas)
+      // reaccionen a los filtros globales en lugar de leer rawData directamente.
+      participantes: partFiltrados,
+      progOrden: poFiltrados,
+
       total,
       completados,
       rural,
@@ -896,7 +901,7 @@ const procesarExportacionCSV = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
-                      {rawData.participantes
+                      {datosFiltrados.participantes
                         .filter(p => !busqueda || p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.municipio?.toLowerCase().includes(busqueda.toLowerCase()))
                         .slice(0, 50)
                         .map((p, i) => (
@@ -1026,7 +1031,7 @@ const procesarExportacionCSV = () => {
                     <div className="grid md:grid-cols-3 gap-4">
                       {Object.keys(PROG_LABEL).map(idProg => {
                         const esFiltroValido = !filtroPrograma || filtroPrograma === idProg
-                        const matches = (rawData.progOrden || []).filter(po => po.programa === idProg && po.orden === 1).length
+                        const matches = (datosFiltrados.progOrden || []).filter(po => po.programa === idProg && po.orden === 1).length
                         
                         // Cálculos relacionales simulando la respuesta de 'vista_por_programa'
                         const mockSer = Math.round(55 + (matches % 25))
