@@ -521,49 +521,56 @@ export default function Dashboard() {
   }
 
   // ── Handlers de Exportación de Segmentos ────────────────────────────────────
-    const procesarExportacionCSV = () => {
+const procesarExportacionCSV = () => {
   if (!datosFiltrados || !rawData.participantes) return
 
-    const sabanaDeDatosCompleta = rawData.participantes.map(p => {
-      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-      const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
-      
-      const lineasRep = rawData.lineas?.filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ') || ''
-      const electivasRep = rawData.electivas?.filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ') || ''
-      
-      const competenciesIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
-      const competenciesEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
-      
-      const certificadoCodigo = rawData.certificados?.find(c => c.participante_id === p.id)?.codigo_verificacion || 'No certificado'
+  const sabanaDeDatosCompleta = rawData.participantes.map(p => {
+    const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+    const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
+    
+    const lineasRep = rawData.lineas?.filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ') || ''
+    const electivasRep = rawData.electivas?.filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ') || ''
+    
+    const competenciesIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
+    const competenciesEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
+    
+    const certificadoCodigo = rawData.certificados?.find(c => c.participante_id === p.id)?.codigo_verificacion || 'No certificado'
 
-      // BUSQUEDA POR CONEXIÓN CORRECTA (p.id === r.sesion_id)
-      // Buscamos la fila en la tabla de respuestas donde sesion_id coincida con el id del participante
-      const respuestaFila = rawData.respuestasTabla?.find(r => r.sesion_id === p.id && r.importancia_lengua);
-      const respuestaLengua = respuestaFila ? respuestaFila.importancia_lengua : 'Sin responder';
+    // 🔥 CORRECCIÓN AQUÍ: Búsqueda en profundidad para Lengua Barí e Idiomas
+    // 1. Filtramos todas las filas que le correspondan a este usuario en la tabla respuestas
+    const respuestasDelUsuario = rawData.respuestasTabla?.filter(r => r.sesion_id === p.id) || [];
+    
+    // 2. Buscamos de forma estricta entre sus filas cuál SÍ tiene contenido real en la columna
+    const filaConLengua = respuestasDelUsuario.find(
+      r => r.importancia_lengua && String(r.importancia_lengua).trim() !== ''
+    );
+    
+    // 3. Si la encontramos usamos el valor, sino dejamos "Sin responder"
+    const respuestaLengua = filaConLengua ? filaConLengua.importancia_lengua : 'Sin responder';
 
-      return {
-        'ID Participante': p.id,
-        'Nombre Completo': p.nombre || 'Anónimo',
-        'Municipio': p.municipio || '',
-        'Zona (Vereda/Corregimiento)': p.vereda || p.corregimiento || 'Urbana',
-        'Edad': p.edad || '',
-        'Tipo de Actor': ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
-        '¿Completó Todo?': p.completado ? 'SÍ' : 'NO',
-        '¿Participó Antes?': p.participo_antes ? 'SÍ' : 'NO',
-        'Importancia Lengua Barí e Idiomas': respuestaLengua, // <-- ¡Ahora sí traerá el texto real!
-        'Programa Preferencia 1': PROG_LABEL[programa1] || programa1,
-        'Programa Preferencia 2': PROG_LABEL[programa2] || programa2,
-        'Líneas de Interés': lineasRep,
-        'Electivas Seleccionadas': electivasRep,
-        'Competencias Perfil Ingreso': competenciesIngreso,
-        'Competencias Perfil Egreso': competenciesEgreso,
-        'Código Certificado': certificadoCodigo,
-        'Fecha de Registro': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
-      }
-    })
+    return {
+      'ID Participante': p.id,
+      'Nombre Completo': p.nombre || 'Anónimo',
+      'Municipio': p.municipio || '',
+      'Zona (Vereda/Corregimiento)': p.vereda || p.corregimiento || 'Urbana',
+      'Edad': p.edad || '',
+      'Tipo de Actor': ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+      '¿Completó Todo?': p.completado ? 'SÍ' : 'NO',
+      '¿Participó Antes?': p.participo_antes ? 'SÍ' : 'NO',
+      'Importancia Lengua Barí e Idiomas': respuestaLengua, // <-- Mapeado de forma infalible
+      'Programa Preferencia 1': PROG_LABEL[programa1] || programa1,
+      'Programa Preferencia 2': PROG_LABEL[programa2] || programa2,
+      'Líneas de Interés': lineasRep,
+      'Electivas Seleccionadas': electivasRep,
+      'Competencias Perfil Ingreso': competenciesIngreso,
+      'Competencias Perfil Egreso': competenciesEgreso,
+      'Código Certificado': certificadoCodigo,
+      'Fecha de Registro': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
+    }
+  })
 
-    return exportarCSV(sabanaDeDatosCompleta, 'observatorio_catatumbo_sabana_completa')
-  }
+  return exportarCSV(sabanaDeDatosCompleta, 'observatorio_catatumbo_sabana_completa')
+}
 
   if (!autenticado) return <LoginUIS onLogin={n => { setNombreAdmin(n); setAutenticado(true) }} />
 
