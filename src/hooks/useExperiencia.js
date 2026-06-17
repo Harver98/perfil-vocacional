@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react'
 import { supabase, supabaseConfigurado } from '../lib/supabase'
-import { isCategoricalAxis } from 'recharts/types/util/ChartUtils'
 
 export const PASOS = {
   BIENVENIDA:            0,
