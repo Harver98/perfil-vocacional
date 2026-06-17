@@ -140,12 +140,12 @@ export function useExperiencia() {
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
         const rows = datos.prioridades.map(p => ({
-          participante_id:   estado.participanteId,
-          programa:          datos.programa,
-          competencia:       p.competencia,
-          orden_prioridad:   p.orden,
-          comentario_libre:  datos.comentario || null,
-          vision_territorial: datos.visionTerritorial || null,
+          participante_id:  estado.participanteId,
+          programa:         datos.programa,
+          competencia:      p.competencia,
+          orden_prioridad:  p.orden,
+          comentario_libre: datos.comentario || null,
+          vision_territorial:  datos.visionterritorial || null,
         }))
         if (rows.length) await supabase.from('perfil_ingreso').insert(rows)
       } catch (err) { console.warn(err) }
@@ -154,6 +154,7 @@ export function useExperiencia() {
     actualizar({ perfilIngreso: nuevo, guardando: false, paso: PASOS.PERFIL_EGRESO })
   }, [estado.participanteId, estado.perfilIngreso, actualizar])
 
+  // ── CORRECCIÓN PRINCIPAL: importancia_lengua se guarda en tabla 'respuestas' ──
   const guardarPerfilEgreso = useCallback(async (datos) => {
     actualizar({ guardando: true })
 
@@ -169,13 +170,13 @@ export function useExperiencia() {
         }))
         if (rows.length) await supabase.from('perfil_egreso').insert(rows)
 
-        // Guardar importancia_lengua directo en participantes
+        // datos.importancia_lengua viene de SocializacionYPerfil → handleGuardarLenguas
         if (datos.importancia_lengua) {
-          await supabase
-            .from('participantes')
-            .update({ importancia_lengua: datos.importancia_lengua })
-            .eq('id', estado.participanteId)
-        }
+            await supabase
+              .from('participantes')
+              .update({ importancia_lengua: datos.importancia_lengua })
+              .eq('id', estado.participanteId)
+          }
       } catch (err) { console.warn('Error guardando egreso:', err) }
     }
 
