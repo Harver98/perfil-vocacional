@@ -309,25 +309,25 @@ export default function Dashboard() {
     setFiltroCompletado(false)
   }
 
- // ── Engine de Filtros Dinámicos (CORREGIDO Y BLINDADO) ───────────────────────────// ── Engine de Filtros Dinámicos (CORREGIDO Y BLINDADO) ───────────────────────────
+ // ── Engine de Filtros Dinámicos (CORREGIDO Y BLINDADO) ───────────────────────────
   const datosFiltrados = useMemo(() => {
     if (!rawData.participantes) return null
 
-    // 1. Filtrar Participantes Raíz con validación estricta de nulos
+    // 1. Filtrar Participantes Raíz con validación de nulos
     const partFiltrados = rawData.participantes.filter(p => {
       if (filtroMunicipio && p.municipio !== filtroMunicipio) return false
       if (filtroActor && p.tipo_actor !== filtroActor) return false
       if (filtroCompletado && !p.completado) return false
       
-      // ✅ BLINDAJE DE EDAD CONTRA NULOS (Arregla de raíz la congelación de los filtros)
+      // ✅ CALIBRACIÓN Y BLINDAJE DE EDAD CONTRA NULOS (Arregla la congelación de filtros)
       if (filtroEdad) {
-        if (!p.edad) return false // Si no hay edad registrada, se descarta con seguridad de forma reactiva
+        if (!p.edad) return false // Si no hay edad y hay filtro activo, se descarta de forma segura
         const e = parseInt(p.edad, 10)
-        if (isNaN(e)) return false // Si no es un número válido, evita la ruptura de lógica
+        if (isNaN(e)) return false
         if (filtroEdad === '< 18' && e >= 18) return false
         if (filtroEdad === '18-25' && (e < 18 || e > 25)) return false
         if (filtroEdad === '26-35' && (e < 26 || e > 35)) return false
-        if (filtroEdad === '36-45' && (e < 26 || e > 45)) return false
+        if (filtroEdad === '36-45' && (e < 36 || e > 45)) return false
         if (filtroEdad === '46+' && e <= 45) return false
       }
 
@@ -405,7 +405,7 @@ export default function Dashboard() {
       progPref[p.programa] = (progPref[p.programa] || 0) + 1
     })
 
-    // ── PROCESAMIENTO PESTAÑA ÁNALISIS MEJORADO (|||) ──
+    // ── PROCESAMIENTO PESTAÑA ÁNALISIS MEJORADO Y SEGURO (|||) ──
     const agruparCompetencias = (coleccion) => {
       const conteo = {}
       coleccion.forEach(c => {
@@ -422,8 +422,7 @@ export default function Dashboard() {
     const competenciasIngreso = agruparCompetencias(ingFiltrados)
     const competenciasEgreso = agruparCompetencias(egFiltrados)
 
-    // ✅ REPARACIÓN MÓDULO LENGUA BARÍ
-    // Busca las respuestas en la sabana de datos vinculando dinámicamente por los IDs activos
+    // ✅ REPARACIÓN TOTAL DE LENGUA BARÍ: Cuenta dinámicamente las respuestas reales filtradas por los IDs activos
     const respuestasLenguaFiltradas = (rawData.respuestasTabla || []).filter(
       r => (targetIds.has(r.sesion_id) || targetIds.has(r.participante_id)) && r.importancia_lengua
     )
@@ -436,7 +435,7 @@ export default function Dashboard() {
 
     const opcionesMock = ['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante']
     
-    // Si la BD cuenta con respuestas estructuradas las procesa, sino renderiza la proporción simulada respecto al total actual filtrado
+    // Si hay respuestas en la base de datos las usa de forma reactiva, si no hay datos filtrados muestra la simulación proporcional
     const analisisLengua = respuestasLenguaFiltradas.length > 0 
       ? opcionesMock.map(op => ({ name: op, value: conteoLengua[op] || 0 }))
       : opcionesMock.map((op, i) => {
@@ -461,6 +460,7 @@ export default function Dashboard() {
       electivasTop,
       progPref: Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
       
+      // Doble mapeo por compatibilidad con el JSX
       competenciasIngreso,
       competenciasEgreso,
       competenciesIngreso,
