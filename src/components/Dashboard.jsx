@@ -5,7 +5,6 @@ import {
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
 
-// ── Colores Institucionales ───────────────────────────────────────────────────
 const G = {
   green:     '#67B93E',
   greenDark: '#3d7820',
@@ -29,7 +28,6 @@ const ACTOR_LABEL = {
   organizacion: 'Organización',
 }
 
-// ── Exportación ───────────────────────────────────────────────────────────────
 const exportarCSV = (datos, nombreArchivo) => {
   if (!datos?.length) return
   const headers = Object.keys(datos[0]).join(',')
@@ -40,8 +38,7 @@ const exportarCSV = (datos, nombreArchivo) => {
       return texto.includes(',') || texto.includes('\n') || texto.includes('\r') ? `"${texto}"` : texto
     }).join(',')
   )
-  const csv = [headers, ...filas].join('\n')
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+  const blob = new Blob(['\uFEFF' + [headers, ...filas].join('\n')], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url; a.download = `${nombreArchivo}.csv`; a.click()
@@ -56,7 +53,6 @@ const exportarJSON = (datos, nombreArchivo) => {
   URL.revokeObjectURL(url)
 }
 
-// ── UI ────────────────────────────────────────────────────────────────────────
 function StatCard({ emoji, label, value, sub, accent }) {
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all">
@@ -82,19 +78,15 @@ function SinDatos({ mensaje }) {
 
 function ExportMenu({ onCSV, onJSON }) {
   const [open, setOpen] = useState(false)
-
-  // Cierra el menú al hacer clic fuera
   useEffect(() => {
     if (!open) return
     const handler = () => setOpen(false)
     document.addEventListener('click', handler)
     return () => document.removeEventListener('click', handler)
   }, [open])
-
   return (
     <div className="relative" onClick={e => e.stopPropagation()}>
-      <button
-        onClick={() => setOpen(o => !o)}
+      <button onClick={() => setOpen(o => !o)}
         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-display font-semibold transition-all"
         style={{ borderColor: G.green, color: G.green, background: G.greenBg }}>
         ⬇️ Exportar <span className="text-xs opacity-60">{open ? '▲' : '▼'}</span>
@@ -102,7 +94,7 @@ function ExportMenu({ onCSV, onJSON }) {
       {open && (
         <div className="absolute right-0 top-9 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 min-w-36">
           {[
-            { icon: '📊', label: 'CSV / Excel', fn: onCSV },
+            { icon: '📊', label: 'CSV / Excel',   fn: onCSV },
             { icon: '📋', label: 'JSON completo', fn: onJSON },
             { icon: '🖨️', label: 'Imprimir',      fn: () => window.print() },
           ].map(op => (
@@ -118,33 +110,27 @@ function ExportMenu({ onCSV, onJSON }) {
 }
 
 function LoginUIS({ onLogin }) {
-  const [email,       setEmail]       = useState('')
-  const [password,    setPassword]    = useState('')
-  const [cargando,    setCargando]    = useState(false)
-  const [error,       setError]       = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState('')
   const [mostrarPass, setMostrarPass] = useState(false)
 
   const intentarLogin = async () => {
     if (!email || !password) return
     setCargando(true); setError('')
     try {
-      const { data: auth, error: ae } = await supabase.auth.signInWithPassword({
-        email: email.trim().toLowerCase(), password,
-      })
+      const { data: auth, error: ae } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password })
       if (ae) throw ae
-      const { data: admin, error: adme } = await supabase
-        .from('admins').select('activo, nombre').eq('user_id', auth.user.id).single()
-      if (adme || !admin?.activo) {
-        await supabase.auth.signOut()
-        throw new Error('Tu cuenta no tiene acceso al dashboard.')
-      }
+      const { data: admin, error: adme } = await supabase.from('admins').select('activo, nombre').eq('user_id', auth.user.id).single()
+      if (adme || !admin?.activo) { await supabase.auth.signOut(); throw new Error('Tu cuenta no tiene acceso al dashboard.') }
       onLogin(admin.nombre || email)
     } catch (e) {
       const m = e.message || ''
-      if (m.includes('Invalid login'))  setError('Correo o contraseña incorrectos.')
+      if (m.includes('Invalid login')) setError('Correo o contraseña incorrectos.')
       else if (m.includes('confirmed')) setError('Confirma tu correo primero.')
-      else if (m.includes('acceso'))    setError(m)
-      else                              setError('Error de conexión. Verifica tu entorno.')
+      else if (m.includes('acceso')) setError(m)
+      else setError('Error de conexión. Verifica tu entorno.')
     } finally { setCargando(false) }
   }
 
@@ -211,17 +197,16 @@ function ConfirmarTodo({ eliminando, onConfirmar, onVolver }) {
   )
 }
 
-// ── Dashboard Principal ───────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [autenticado,  setAutenticado]  = useState(false)
-  const [nombreAdmin,  setNombreAdmin]  = useState('')
-  const [vista,        setVista]        = useState(0)
-  const [cargando,     setCargando]     = useState(true)
-  const [rawData,      setRawData]      = useState({})
-  const [modalEliminar,setModalEliminar]= useState(null)
-  const [eliminando,   setEliminando]   = useState(false)
-  const [mensajeElim,  setMensajeElim]  = useState(null)
-  const [busqueda,     setBusqueda]     = useState('')
+  const [autenticado,   setAutenticado]   = useState(false)
+  const [nombreAdmin,   setNombreAdmin]   = useState('')
+  const [vista,         setVista]         = useState(0)
+  const [cargando,      setCargando]      = useState(true)
+  const [rawData,       setRawData]       = useState({})
+  const [modalEliminar, setModalEliminar] = useState(null)
+  const [eliminando,    setEliminando]    = useState(false)
+  const [mensajeElim,   setMensajeElim]   = useState(null)
+  const [busqueda,      setBusqueda]      = useState('')
 
   const [filtroMunicipio,  setFiltroMunicipio]  = useState('')
   const [filtroPrograma,   setFiltroPrograma]   = useState('')
@@ -233,15 +218,11 @@ export default function Dashboard() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!session) return
       supabase.from('admins').select('nombre, activo').eq('user_id', session.user.id).single()
-        .then(({ data }) => {
-          if (data?.activo) { setNombreAdmin(data.nombre || session.user.email); setAutenticado(true) }
-        })
+        .then(({ data }) => { if (data?.activo) { setNombreAdmin(data.nombre || session.user.email); setAutenticado(true) } })
     })
   }, [])
 
-  const cerrarSesion = async () => {
-    await supabase.auth.signOut(); setAutenticado(false); setRawData({})
-  }
+  const cerrarSesion = async () => { await supabase.auth.signOut(); setAutenticado(false); setRawData({}) }
 
   const cargarDatos = useCallback(async () => {
     setCargando(true)
@@ -254,7 +235,7 @@ export default function Dashboard() {
         { data: certificados },
         { data: pIngreso },
         { data: pEgreso },
-        { data: respuestasTabla },
+        { data: manifiestoData },
       ] = await Promise.all([
         supabase.from('participantes').select('*'),
         supabase.from('programas_orden').select('*'),
@@ -263,7 +244,7 @@ export default function Dashboard() {
         supabase.from('certificados').select('*'),
         supabase.from('perfil_ingreso').select('*'),
         supabase.from('perfil_egreso').select('*'),
-        supabase.from('respuestas').select('*'),
+        supabase.from('manifiesto').select('*'),
       ])
       setRawData({
         participantes:  participantes  || [],
@@ -273,23 +254,16 @@ export default function Dashboard() {
         certificados:   certificados   || [],
         perfilIngreso:  pIngreso       || [],
         perfilEgreso:   pEgreso        || [],
-        respuestasTabla: respuestasTabla || [],
+        manifiesto:     manifiestoData || [],
       })
-    } catch (err) {
-      console.error('Error cargando datos:', err)
-    } finally {
-      setCargando(false)
-    }
+    } catch (err) { console.error('Error cargando datos:', err) }
+    finally { setCargando(false) }
   }, [])
 
   useEffect(() => { if (autenticado) cargarDatos() }, [autenticado, cargarDatos])
 
-  const limpiarFiltros = () => {
-    setFiltroMunicipio(''); setFiltroPrograma(''); setFiltroActor('')
-    setFiltroEdad(''); setFiltroCompletado(false)
-  }
+  const limpiarFiltros = () => { setFiltroMunicipio(''); setFiltroPrograma(''); setFiltroActor(''); setFiltroEdad(''); setFiltroCompletado(false) }
 
-  // ── Engine de Filtros ─────────────────────────────────────────────────────
   const datosFiltrados = useMemo(() => {
     if (!rawData.participantes?.length) return null
 
@@ -301,11 +275,11 @@ export default function Dashboard() {
         if (!p.edad) return false
         const e = parseInt(p.edad, 10)
         if (isNaN(e)) return false
-        if (filtroEdad === '< 18'  && e >= 18)         return false
+        if (filtroEdad === '< 18'  && e >= 18) return false
         if (filtroEdad === '18-25' && (e < 18 || e > 25)) return false
         if (filtroEdad === '26-35' && (e < 26 || e > 35)) return false
         if (filtroEdad === '36-45' && (e < 36 || e > 45)) return false
-        if (filtroEdad === '46+'   && e <= 45)         return false
+        if (filtroEdad === '46+'   && e <= 45) return false
       }
       if (filtroPrograma) {
         const tiene = rawData.progOrden?.some(po => po.participante_id === p.id && po.programa === filtroPrograma && po.orden === 1)
@@ -314,14 +288,13 @@ export default function Dashboard() {
       return true
     })
 
-    const targetIds = new Set(partFiltrados.map(p => p.id))
-
-    const poFiltrados   = (rawData.progOrden     || []).filter(po => targetIds.has(po.participante_id))
-    const linFiltrados  = (rawData.lineas        || []).filter(l  => targetIds.has(l.participante_id))
-    const elFiltrados   = (rawData.electivas     || []).filter(e  => targetIds.has(e.participante_id))
-    const certFiltrados = (rawData.certificados  || []).filter(c  => targetIds.has(c.participante_id))
-    const ingFiltrados  = (rawData.perfilIngreso || []).filter(i  => targetIds.has(i.participante_id))
-    const egFiltrados   = (rawData.perfilEgreso  || []).filter(e  => targetIds.has(e.participante_id))
+    const targetIds   = new Set(partFiltrados.map(p => p.id))
+    const poFiltrados   = (rawData.progOrden    || []).filter(po => targetIds.has(po.participante_id))
+    const linFiltrados  = (rawData.lineas       || []).filter(l  => targetIds.has(l.participante_id))
+    const elFiltrados   = (rawData.electivas    || []).filter(e  => targetIds.has(e.participante_id))
+    const certFiltrados = (rawData.certificados || []).filter(c  => targetIds.has(c.participante_id))
+    const ingFiltrados  = (rawData.perfilIngreso|| []).filter(i  => targetIds.has(i.participante_id))
+    const egFiltrados   = (rawData.perfilEgreso || []).filter(e  => targetIds.has(e.participante_id))
 
     const total        = partFiltrados.length
     const completados  = partFiltrados.filter(p => p.completado).length
@@ -329,9 +302,8 @@ export default function Dashboard() {
     const participoAntes = partFiltrados.filter(p => p.participo_antes).length
 
     let sumaEdad = 0, cuentaEdad = 0
-    const porMunicipio = {}
-    const porActor     = {}
-    const porEdad      = { '< 18': 0, '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 }
+    const porMunicipio = {}, porActor = {}
+    const porEdad = { '< 18': 0, '18-25': 0, '26-35': 0, '36-45': 0, '46+': 0 }
 
     partFiltrados.forEach(p => {
       porMunicipio[p.municipio] = (porMunicipio[p.municipio] || 0) + 1
@@ -340,11 +312,11 @@ export default function Dashboard() {
         const e = parseInt(p.edad, 10)
         if (!isNaN(e)) {
           sumaEdad += e; cuentaEdad++
-          if (e < 18)       porEdad['< 18']++
+          if (e < 18) porEdad['< 18']++
           else if (e <= 25) porEdad['18-25']++
           else if (e <= 35) porEdad['26-35']++
           else if (e <= 45) porEdad['36-45']++
-          else              porEdad['46+']++
+          else porEdad['46+']++
         }
       }
     })
@@ -353,14 +325,14 @@ export default function Dashboard() {
       const pMun = partFiltrados.filter(p => p.municipio === mun)
       return {
         municipio: mun, total: tot,
-        completados:       pMun.filter(p => p.completado).length,
-        de_vereda:         pMun.filter(p => p.vereda).length,
-        de_corregimiento:  pMun.filter(p => p.corregimiento).length,
-        urbanos:           pMun.filter(p => !p.vereda && !p.corregimiento).length,
-        estudiantes:       pMun.filter(p => p.tipo_actor === 'estudiante').length,
-        docentes:          pMun.filter(p => p.tipo_actor === 'docente').length,
-        comunidad:         pMun.filter(p => p.tipo_actor === 'comunidad').length,
-        organizaciones:    pMun.filter(p => p.tipo_actor === 'organizacion').length,
+        completados: pMun.filter(p => p.completado).length,
+        de_vereda: pMun.filter(p => p.vereda).length,
+        de_corregimiento: pMun.filter(p => p.corregimiento).length,
+        urbanos: pMun.filter(p => !p.vereda && !p.corregimiento).length,
+        estudiantes: pMun.filter(p => p.tipo_actor === 'estudiante').length,
+        docentes: pMun.filter(p => p.tipo_actor === 'docente').length,
+        comunidad: pMun.filter(p => p.tipo_actor === 'comunidad').length,
+        organizaciones: pMun.filter(p => p.tipo_actor === 'organizacion').length,
       }
     }).sort((a, b) => b.total - a.total)
 
@@ -373,66 +345,35 @@ export default function Dashboard() {
     const electivasTop = Object.entries(eCount).map(([electiva, total]) => ({ electiva, total })).sort((a,b) => b.total - a.total).slice(0, 8)
 
     const progPref = {}
-    poFiltrados.filter(p => p.orden === 1).forEach(p => {
-      progPref[p.programa] = (progPref[p.programa] || 0) + 1
-    })
+    poFiltrados.filter(p => p.orden === 1).forEach(p => { progPref[p.programa] = (progPref[p.programa] || 0) + 1 })
 
-    // perfil_ingreso/egreso no tiene columna 'categoria' ni 'orden' — usa 'orden_prioridad'
     const agruparCompetencias = (coleccion) => {
       const conteo = {}
-      coleccion.forEach(c => {
-        if (!c.competencia) return
-        conteo[c.competencia] = (conteo[c.competencia] || 0) + 1
-      })
-      return Object.entries(conteo)
-        .map(([competencia, total]) => ({ competencia, total }))
-        .sort((a, b) => b.total - a.total)
+      coleccion.forEach(c => { if (!c.competencia) return; conteo[c.competencia] = (conteo[c.competencia] || 0) + 1 })
+      return Object.entries(conteo).map(([competencia, total]) => ({ competencia, total })).sort((a, b) => b.total - a.total)
     }
 
-    /*const todosLosIdsParticipantes = new Set((rawData.participantes || []).map(p => p.id))
-    const respuestasLenguaValidas = (rawData.respuestasTabla || []).filter(
-      r => r.importancia_lengua &&
-           String(r.importancia_lengua).trim() !== '' &&
-           String(r.importancia_lengua).trim().toLowerCase() !== 'null'
-    )
-    // Si sesion_id coincide con participante_id usamos el filtro; si no, mostramos todo sin filtrar
-    const sesionIdMatcheaParticipante = respuestasLenguaValidas.some(r => todosLosIdsParticipantes.has(r.sesion_id))
-    const respuestasLenguaFiltradas = sesionIdMatcheaParticipante
-      ? respuestasLenguaValidas.filter(r => targetIds.has(r.sesion_id))
-      : respuestasLenguaValidas
+    // Lengua: directo desde participantes
     const conteoLengua = {}
-    respuestasLenguaFiltradas.forEach(r => {
-      const val = r.importancia_lengua.trim()
-      conteoLengua[val] = (conteoLengua[val] || 0) + 1
+    partFiltrados.forEach(p => {
+      if (p.importancia_lengua) conteoLengua[p.importancia_lengua] = (conteoLengua[p.importancia_lengua] || 0) + 1
     })
     const OPCIONES_LENGUA = ['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante']
-    // Solo se construye el array si hay respuestas reales; de lo contrario queda vacío
-    const analisisLengua = respuestasLenguaFiltradas.length > 0
-      ? OPCIONES_LENGUA.map(op => ({ name: op, value: conteoLengua[op] || 0 }))
-      : []*/
-
-      const conteoLengua = {}
-      partFiltrados.forEach(p => {
-        if (p.importancia_lengua) {
-          conteoLengua[p.importancia_lengua] = (conteoLengua[p.importancia_lengua] || 0) + 1
-        }
-      })
-      const OPCIONES_LENGUA = ['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante']
-      const analisisLengua = OPCIONES_LENGUA.map(op => ({ name: op, value: conteoLengua[op] || 0 }))
+    const analisisLengua = OPCIONES_LENGUA.map(op => ({ name: op, value: conteoLengua[op] || 0 }))
 
     return {
       participantes: partFiltrados,
-      progOrden:     poFiltrados,
+      progOrden: poFiltrados,
       total, completados, rural, participoAntes,
       certificados: certFiltrados.length,
-      tasa:         total ? Math.round((completados / total) * 100) : 0,
-      municipios:   Object.keys(porMunicipio).length,
+      tasa: total ? Math.round((completados / total) * 100) : 0,
+      municipios: Object.keys(porMunicipio).length,
       edadPromedio: cuentaEdad ? Math.round(sumaEdad / cuentaEdad) : 0,
       porMunicipio: Object.entries(porMunicipio).map(([municipio, total]) => ({ municipio, total })).sort((a,b) => b.total - a.total),
-      porActor:     Object.entries(porActor).map(([k, v]) => ({ actor: ACTOR_LABEL[k] || k, total: v })),
-      porEdad:      Object.entries(porEdad).filter(([, v]) => v > 0).map(([k, v]) => ({ rango: k, total: v })),
+      porActor: Object.entries(porActor).map(([k, v]) => ({ actor: ACTOR_LABEL[k] || k, total: v })),
+      porEdad: Object.entries(porEdad).filter(([, v]) => v > 0).map(([k, v]) => ({ rango: k, total: v })),
       municipioDetalle, lineasTop, electivasTop,
-      progPref:     Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
+      progPref: Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
       competenciasIngreso: agruparCompetencias(ingFiltrados),
       competenciasEgreso:  agruparCompetencias(egFiltrados),
       analisisLengua,
@@ -448,56 +389,104 @@ export default function Dashboard() {
     }
   }, [rawData.participantes])
 
-  // ── Exportación CSV completa ──────────────────────────────────────────────
+  // ── CSV COMPLETO para análisis ────────────────────────────────────────────
   const procesarExportacionCSV = () => {
     if (!rawData.participantes?.length) return
 
     const sabana = rawData.participantes.map(p => {
       const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
       const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
-      const lineasRep     = (rawData.lineas    || []).filter(l  => l.participante_id === p.id).map(l => l.linea).join(' | ')
-      const electivasRep  = (rawData.electivas || []).filter(e  => e.participante_id === p.id).map(e => e.electiva).join(' | ')
-      const compIngreso   = (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(i => `${i.competencia}(${i.orden_prioridad ?? ''})`).join(' | ')
-      const compEgreso    = (rawData.perfilEgreso  || []).filter(e => e.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
-      const certFila      = (rawData.certificados  || []).find(c => c.participante_id === p.id)
-      const certificado   = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
-      const visionIngreso = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial) ?.vision_territorial || ''
-      
+      const programa3 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 3)?.programa || ''
+
+      const lineasRep    = (rawData.lineas    || []).filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ')
+      const electivasRep = (rawData.electivas || []).filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ')
+
+      const compIngreso = (rawData.perfilIngreso || [])
+        .filter(i => i.participante_id === p.id)
+        .sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0))
+        .map(i => `${i.competencia}(${i.orden_prioridad ?? ''})`)
+        .join(' | ')
+
+      const compEgreso = (rawData.perfilEgreso || [])
+        .filter(e => e.participante_id === p.id)
+        .sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0))
+        .map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`)
+        .join(' | ')
+
+      // Comentarios cualitativos — uno por programa, concatenados si hay varios
+      const comentariosIngreso = [...new Set(
+        (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id && i.comentario_libre).map(i => `[${PROG_LABEL[i.programa] || i.programa}] ${i.comentario_libre}`)
+      )].join(' || ')
+
+      const visionTerritorial = [...new Set(
+        (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id && i.vision_territorial).map(i => `[${PROG_LABEL[i.programa] || i.programa}] ${i.vision_territorial}`)
+      )].join(' || ')
+
+      const comentariosEgreso = [...new Set(
+        (rawData.perfilEgreso || []).filter(e => e.participante_id === p.id && e.comentario_libre).map(e => `[${PROG_LABEL[e.programa] || e.programa}] ${e.comentario_libre}`)
+      )].join(' || ')
+
+      const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      const mensajeFinal   = manifiestoFila?.comentario_final || ''
+      const empTS          = manifiestoFila?.empleabilidad_ts  || ''
+      const empIA          = manifiestoFila?.empleabilidad_ia  || ''
+      const empAdm         = manifiestoFila?.empleabilidad_adm || ''
+
+      const certFila   = (rawData.certificados || []).find(c => c.participante_id === p.id)
+      const certificado = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
+
       return {
-        'ID Participante':                    p.id,
-        'Nombre Completo':                    p.nombre              || 'Anónimo',
-        'Municipio':                          p.municipio           || '',
-        'Corregimiento':                      p.corregimiento       || '',
-        'Vereda':                             p.vereda              || '',
-        'Zona':                               p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
-        'Edad':                               p.edad                || '',
-        'Tipo de Actor':                      ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
-        'Colegio':                            p.colegio             || '',
-        'Grado':                              p.grado               || '',
-        'Institución Educativa':              p.institucion         || '',
-        'Área de Enseñanza':                  p.area                || '',
-        'Nivel Educativo':                    p.nivel_educativo     || '',
-        'Organización':                       p.organizacion        || '',
-        'Correo':                             p.correo              || '',
-        '¿Completó Todo?':                    p.completado          ? 'SÍ' : 'NO',
-        '¿Participó Antes?':                  p.participo_antes     ? 'SÍ' : 'NO',
-        'Importancia Lengua Barí e Idiomas':  p.importancia_lengua || 'Sin responder',
-        'Programa Preferencia 1':             PROG_LABEL[programa1] || programa1,
-        'Programa Preferencia 2':             PROG_LABEL[programa2] || programa2,
-        'Líneas de Interés':                  lineasRep,
-        'Electivas Seleccionadas':            electivasRep,
-        'Competencias Perfil Ingreso':        compIngreso,
-        'Competencias Perfil Egreso':         compEgreso,
-        'Código Certificado':                 certificado,
-        'Fecha de Registro':                  p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
-        'Visión Territorial del programa':    visionIngreso,
+        // ── IDENTIFICACIÓN ──
+        'ID Participante':                   p.id,
+        'Nombre Completo':                   p.nombre              || 'Anónimo',
+        'Fecha de Registro':                 p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
+        // ── UBICACIÓN ──
+        'Municipio':                         p.municipio           || '',
+        'Corregimiento':                     p.corregimiento       || '',
+        'Vereda':                            p.vereda              || '',
+        'Zona':                              p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
+        // ── PERFIL PERSONAL ──
+        'Edad':                              p.edad                || '',
+        'Tipo de Actor':                     ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+        'Colegio':                           p.colegio             || '',
+        'Grado':                             p.grado               || '',
+        'Institución Educativa':             p.institucion         || '',
+        'Área de Enseñanza':                 p.area                || '',
+        'Nivel Educativo':                   p.nivel_educativo     || '',
+        'Organización':                      p.organizacion        || '',
+        'Correo':                            p.correo              || '',
+        // ── PARTICIPACIÓN ──
+        '¿Completó Todo?':                   p.completado          ? 'SÍ' : 'NO',
+        '¿Participó Antes?':                 p.participo_antes     ? 'SÍ' : 'NO',
+        // ── PROGRAMAS ──
+        'Programa Preferencia 1':            PROG_LABEL[programa1] || programa1,
+        'Programa Preferencia 2':            PROG_LABEL[programa2] || programa2,
+        'Programa Preferencia 3':            PROG_LABEL[programa3] || programa3,
+        // ── CURRÍCULO ──
+        'Líneas de Investigación':           lineasRep,
+        'Electivas Seleccionadas':           electivasRep,
+        // ── COMPETENCIAS ──
+        'Competencias Perfil Ingreso':       compIngreso,
+        'Competencias Perfil Egreso':        compEgreso,
+        // ── RESPUESTAS CUALITATIVAS ──
+        'Visión Territorial del Programa':   visionTerritorial,
+        'Comentario Perfil Ingreso':         comentariosIngreso,
+        'Comentario Perfil Egreso':          comentariosEgreso,
+        // ── LENGUA ──
+        'Importancia Lengua Barí e Idiomas': p.importancia_lengua  || 'Sin responder',
+        // ── EMPLEABILIDAD ──
+        'Empleabilidad Trabajo Social':      empTS,
+        'Empleabilidad Ing. Agronómica':     empIA,
+        'Empleabilidad Adm. Empresas':       empAdm,
+        'Mensaje Final':                     mensajeFinal,
+        // ── CERTIFICADO ──
+        'Código Certificado':                certificado,
       }
     })
 
     exportarCSV(sabana, 'observatorio_catatumbo_sabana_completa')
   }
 
-  // ── Eliminación de registros ──────────────────────────────────────────────
   const eliminarRegistros = async (tipo) => {
     setEliminando(true); setMensajeElim(null)
     const TABLAS_HIJO = ['manifiesto', 'certificados', 'electivas', 'lineas_investigacion', 'perfil_egreso', 'perfil_ingreso', 'programas_orden']
@@ -507,22 +496,18 @@ export default function Dashboard() {
         if (incom?.length) {
           const ids = incom.map(p => p.id)
           for (const t of TABLAS_HIJO) await supabase.from(t).delete().in('participante_id', ids)
-          await supabase.from('respuestas').delete().in('sesion_id', ids)
           await supabase.from('participantes').delete().eq('completado', false)
         }
         setMensajeElim({ ok: true, texto: '✅ Registros incompletos depurados correctamente.' })
       } else if (tipo === 'todo') {
         for (const t of TABLAS_HIJO) await supabase.from(t).delete().neq('id', '00000000-0000-0000-0000-000000000000')
-        await supabase.from('respuestas').delete().neq('id', '00000000-0000-0000-0000-000000000000')
         await supabase.from('participantes').delete().neq('id', '00000000-0000-0000-0000-000000000000')
         setMensajeElim({ ok: true, texto: '✅ Base de datos restablecida por completo.' })
       }
       await cargarDatos()
     } catch (err) {
       setMensajeElim({ ok: false, texto: '⚠️ Error al eliminar: ' + err.message })
-    } finally {
-      setEliminando(false); setModalEliminar(null)
-    }
+    } finally { setEliminando(false); setModalEliminar(null) }
   }
 
   if (!autenticado) return <LoginUIS onLogin={n => { setNombreAdmin(n); setAutenticado(true) }} />
@@ -540,8 +525,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800">
-
-      {/* HEADER */}
       <header style={{ background: G.greenDark }} className="shadow-lg print:hidden">
         <div className="max-w-7xl mx-auto px-5 py-4 flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-3">
@@ -557,10 +540,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             {nombreAdmin && <span className="text-white/80 text-xs font-semibold bg-white/10 px-3 py-1.5 rounded-lg border border-white/10">👤 {nombreAdmin}</span>}
-            <ExportMenu
-              onCSV={procesarExportacionCSV}
-              onJSON={() => exportarJSON(rawData, 'observatorio_catatumbo_full')}
-            />
+            <ExportMenu onCSV={procesarExportacionCSV} onJSON={() => exportarJSON(rawData, 'observatorio_catatumbo_full')} />
             <button onClick={cargarDatos} className="text-xs bg-white/10 text-white border border-white/20 hover:bg-white/20 px-3 py-1.5 rounded-lg font-medium transition-colors">🔄 Actualizar</button>
             <button onClick={() => setModalEliminar('menu')} className="text-xs bg-red-700/40 text-red-100 hover:bg-red-700/60 px-3 py-1.5 rounded-lg transition-colors">🗑️ Depurar</button>
             <button onClick={cerrarSesion} className="text-xs text-white/60 hover:text-white pl-2 font-bold">Salir →</button>
@@ -579,46 +559,35 @@ export default function Dashboard() {
         </div>
       </header>
 
-      {/* FILTROS GLOBALES */}
       <section className="bg-white border-b border-gray-200 py-4 px-5 shadow-sm sticky top-0 z-20 print:hidden">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
           <div className="flex flex-wrap items-center gap-3 flex-1">
             <span className="text-gray-400 font-bold uppercase text-xs">Filtros:</span>
-            <select value={filtroMunicipio} onChange={e => setFiltroMunicipio(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
+            <select value={filtroMunicipio} onChange={e => setFiltroMunicipio(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
               <option value="">🗺️ Todos los Municipios</option>
               {listadosFiltros.municipios.map(m => <option key={m} value={m}>{m}</option>)}
             </select>
-            <select value={filtroPrograma} onChange={e => setFiltroPrograma(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
+            <select value={filtroPrograma} onChange={e => setFiltroPrograma(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
               <option value="">🎯 Todos los Programas</option>
               {Object.entries(PROG_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <select value={filtroActor} onChange={e => setFiltroActor(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
+            <select value={filtroActor} onChange={e => setFiltroActor(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
               <option value="">👥 Todos los Actores</option>
               {Object.entries(ACTOR_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
-            <select value={filtroEdad} onChange={e => setFiltroEdad(e.target.value)}
-              className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
+            <select value={filtroEdad} onChange={e => setFiltroEdad(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-1.5 text-xs font-semibold bg-gray-50 focus:outline-none focus:border-green-500">
               <option value="">⏳ Todas las Edades</option>
               {['< 18', '18-25', '26-35', '36-45', '46+'].map(r => <option key={r} value={r}>{r} años</option>)}
             </select>
             <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer text-gray-600">
-              <input type="checkbox" checked={filtroCompletado} onChange={e => setFiltroCompletado(e.target.checked)}
-                className="rounded text-green-600 h-3.5 w-3.5" />
+              <input type="checkbox" checked={filtroCompletado} onChange={e => setFiltroCompletado(e.target.checked)} className="rounded text-green-600 h-3.5 w-3.5" />
               Solo Completados
             </label>
           </div>
-          {hayFiltros && (
-            <button onClick={limpiarFiltros} className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1.5 rounded-lg hover:text-red-700">
-              ✕ Limpiar Filtros
-            </button>
-          )}
+          {hayFiltros && <button onClick={limpiarFiltros} className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1.5 rounded-lg hover:text-red-700">✕ Limpiar Filtros</button>}
         </div>
       </section>
 
-      {/* CONTENIDO */}
       <main className="max-w-7xl mx-auto px-5 py-6">
         {cargando ? (
           <div className="flex items-center justify-center py-32 flex-col gap-4">
@@ -629,7 +598,6 @@ export default function Dashboard() {
           <SinDatos mensaje={hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No hay participantes registrados aún.'} />
         ) : (
           <>
-            {/* VISTA 0: RESUMEN */}
             {vista === 0 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -656,8 +624,7 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height={160}>
                       <BarChart data={datosFiltrados.porEdad}>
                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                        <XAxis dataKey="rango" tick={{ fontSize: 11 }} />
-                        <YAxis tick={{ fontSize: 11 }} />
+                        <XAxis dataKey="rango" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} />
                         <Tooltip />
                         <Bar dataKey="total" fill={G.green} radius={[4, 4, 0, 0]} name="Participantes" />
                       </BarChart>
@@ -668,8 +635,7 @@ export default function Dashboard() {
                     <ResponsiveContainer width="100%" height={180}>
                       <BarChart data={datosFiltrados.porMunicipio.slice(0, 5)} layout="vertical">
                         <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                        <XAxis type="number" tick={{ fontSize: 11 }} />
-                        <YAxis type="category" dataKey="municipio" width={80} tick={{ fontSize: 11 }} />
+                        <XAxis type="number" tick={{ fontSize: 11 }} /><YAxis type="category" dataKey="municipio" width={80} tick={{ fontSize: 11 }} />
                         <Tooltip />
                         <Bar dataKey="total" fill={G.purple} radius={[0, 4, 4, 0]} name="Participantes" />
                       </BarChart>
@@ -679,7 +645,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* VISTA 1: TERRITORIO */}
             {vista === 1 && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
@@ -687,8 +652,7 @@ export default function Dashboard() {
                   <ResponsiveContainer width="100%" height={300}>
                     <BarChart data={datosFiltrados.municipioDetalle}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                      <XAxis dataKey="municipio" tick={{ fontSize: 11 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
+                      <XAxis dataKey="municipio" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} />
                       <Tooltip /><Legend />
                       <Bar dataKey="urbanos" name="Zona Urbana" stackId="t" fill={G.blue} />
                       <Bar dataKey="de_corregimiento" name="Corregimientos" stackId="t" fill={G.purple} />
@@ -700,9 +664,7 @@ export default function Dashboard() {
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr style={{ background: G.greenBg }} className="text-xs uppercase tracking-wider text-gray-700 font-bold border-b border-gray-100">
-                        {['Municipio', 'Total', 'Completados', 'Urbano', 'Vereda', 'Estudiante', 'Comunidad'].map(h => (
-                          <th key={h} className="p-4">{h}</th>
-                        ))}
+                        {['Municipio','Total','Completados','Urbano','Vereda','Estudiante','Comunidad'].map(h => <th key={h} className="p-4">{h}</th>)}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
@@ -723,61 +685,40 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* VISTA 2: LÍNEAS & ELECTIVAS */}
             {vista === 2 && (
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-4">Líneas de Investigación Prioritarias</h3>
                   {datosFiltrados.lineasTop.length
-                    ? <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={datosFiltrados.lineasTop} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                          <XAxis type="number" tick={{ fontSize: 10 }} />
-                          <YAxis type="category" dataKey="linea" width={140} tick={{ fontSize: 10 }} />
-                          <Tooltip />
-                          <Bar dataKey="total" fill={G.purple} radius={[0, 4, 4, 0]} name="Votos" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                    ? <ResponsiveContainer width="100%" height={300}><BarChart data={datosFiltrados.lineasTop} layout="vertical"><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" /><XAxis type="number" tick={{ fontSize: 10 }} /><YAxis type="category" dataKey="linea" width={140} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="total" fill={G.purple} radius={[0, 4, 4, 0]} name="Votos" /></BarChart></ResponsiveContainer>
                     : <SinDatos />}
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-4">Electivas más Valoradas</h3>
                   {datosFiltrados.electivasTop.length
-                    ? <ResponsiveContainer width="100%" height={300}>
-                        <BarChart data={datosFiltrados.electivasTop} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                          <XAxis type="number" tick={{ fontSize: 10 }} />
-                          <YAxis type="category" dataKey="electiva" width={140} tick={{ fontSize: 10 }} />
-                          <Tooltip />
-                          <Bar dataKey="total" fill={G.blue} radius={[0, 4, 4, 0]} name="Votos" />
-                        </BarChart>
-                      </ResponsiveContainer>
+                    ? <ResponsiveContainer width="100%" height={300}><BarChart data={datosFiltrados.electivasTop} layout="vertical"><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" /><XAxis type="number" tick={{ fontSize: 10 }} /><YAxis type="category" dataKey="electiva" width={140} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="total" fill={G.blue} radius={[0, 4, 4, 0]} name="Votos" /></BarChart></ResponsiveContainer>
                     : <SinDatos />}
                 </div>
               </div>
             )}
 
-            {/* VISTA 3: PARTICIPANTES */}
             {vista === 3 && (
               <div className="space-y-4">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-3">
                   <span className="text-gray-400 text-sm">🔍</span>
                   <input type="text" value={busqueda} onChange={e => setBusqueda(e.target.value)}
-                    placeholder="Buscar por nombre o municipio..."
-                    className="flex-1 text-sm text-gray-700 bg-transparent focus:outline-none" />
+                    placeholder="Buscar por nombre o municipio..." className="flex-1 text-sm text-gray-700 bg-transparent focus:outline-none" />
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr style={{ background: G.greenBg }} className="text-xs uppercase tracking-wider text-gray-700 font-bold border-b border-gray-100">
-                        {['Nombre', 'Municipio', 'Actor', 'Edad', 'Estado'].map(h => <th key={h} className="p-4">{h}</th>)}
+                        {['Nombre','Municipio','Actor','Edad','Lengua Barí','Estado'].map(h => <th key={h} className="p-4">{h}</th>)}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100 text-sm">
                       {datosFiltrados.participantes
-                        .filter(p => !busqueda ||
-                          p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-                          p.municipio?.toLowerCase().includes(busqueda.toLowerCase()))
+                        .filter(p => !busqueda || p.nombre?.toLowerCase().includes(busqueda.toLowerCase()) || p.municipio?.toLowerCase().includes(busqueda.toLowerCase()))
                         .slice(0, 50)
                         .map((p, i) => (
                           <tr key={i} className="hover:bg-gray-50/80">
@@ -785,6 +726,7 @@ export default function Dashboard() {
                             <td className="p-4 text-gray-600">{p.municipio}</td>
                             <td className="p-4 text-xs font-bold text-purple-700 uppercase">{p.tipo_actor}</td>
                             <td className="p-4 text-gray-600">{p.edad || '—'}</td>
+                            <td className="p-4 text-xs text-gray-500">{p.importancia_lengua || '—'}</td>
                             <td className="p-4">
                               <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${p.completado ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-400'}`}>
                                 {p.completado ? 'Completado' : 'Incompleto'}
@@ -798,30 +740,18 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* VISTA 4: PROGRAMAS */}
             {vista === 4 && (
               <div className="space-y-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 mb-2">Primera Preferencia de Programas</h3>
                   <p className="text-xs text-gray-400 mb-4">Programa seleccionado con prioridad 1</p>
                   {datosFiltrados.progPref.length
-                    ? <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={datosFiltrados.progPref}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                          <XAxis dataKey="programa" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
-                          <Tooltip />
-                          <Bar dataKey="total" fill={G.green} radius={[4, 4, 0, 0]}>
-                            {datosFiltrados.progPref.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                    ? <ResponsiveContainer width="100%" height={250}><BarChart data={datosFiltrados.progPref}><CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} /><XAxis dataKey="programa" tick={{ fontSize: 11 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="total" fill={G.green} radius={[4, 4, 0, 0]}>{datosFiltrados.progPref.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer>
                     : <SinDatos />}
                 </div>
               </div>
             )}
 
-            {/* VISTA 5: ANÁLISIS AVANZADO */}
             {vista === 5 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -830,59 +760,27 @@ export default function Dashboard() {
                   <StatCard emoji="🔄" label="Participación Previa" value={datosFiltrados.participoAntes} accent={G.orange} />
                   <StatCard emoji="🧮" label="Muestra Total" value={datosFiltrados.total} accent={G.purple} />
                 </div>
-
                 <div className="grid lg:grid-cols-2 gap-6">
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Perfil de Ingreso: Competencias</h3>
-                    <p className="text-xs text-gray-400 mb-3">Frecuencia por dimensión (SABER / HACER / SER)</p>
+                    <p className="text-xs text-gray-400 mb-3">Frecuencia de menciones</p>
                     {datosFiltrados.competenciasIngreso.length
-                      ? <>
-                          <ResponsiveContainer width="100%" height={280}>
-                            <BarChart data={datosFiltrados.competenciasIngreso.slice(0, 10)} layout="vertical">
-                              <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                              <XAxis type="number" tick={{ fontSize: 10 }} />
-                              <YAxis type="category" dataKey="competencia" width={110} tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <Bar dataKey="total" name="Menciones" fill={G.green} radius={[0, 4, 4, 0]} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        </>
+                      ? <ResponsiveContainer width="100%" height={280}><BarChart data={datosFiltrados.competenciasIngreso.slice(0, 10)} layout="vertical"><CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" /><XAxis type="number" tick={{ fontSize: 10 }} /><YAxis type="category" dataKey="competencia" width={110} tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="total" name="Menciones" fill={G.green} radius={[0, 4, 4, 0]} /></BarChart></ResponsiveContainer>
                       : <SinDatos />}
                   </div>
-
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Perfil de Egreso: Competencias</h3>
                     <p className="text-xs text-gray-400 mb-3">Priorización al finalizar el ciclo formativo</p>
                     {datosFiltrados.competenciasEgreso.length
-                      ? <ResponsiveContainer width="100%" height={280}>
-                          <BarChart data={datosFiltrados.competenciasEgreso.slice(0, 10)}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                            <XAxis dataKey="competencia" tick={{ fontSize: 9, angle: -15, textAnchor: 'end' }} height={50} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <Bar dataKey="total" name="Relevancia" fill={G.purple} radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
+                      ? <ResponsiveContainer width="100%" height={280}><BarChart data={datosFiltrados.competenciasEgreso.slice(0, 10)}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" /><XAxis dataKey="competencia" tick={{ fontSize: 9, angle: -15, textAnchor: 'end' }} height={50} /><YAxis tick={{ fontSize: 10 }} /><Tooltip /><Bar dataKey="total" name="Relevancia" fill={G.purple} radius={[4, 4, 0, 0]} /></BarChart></ResponsiveContainer>
                       : <SinDatos />}
                   </div>
                 </div>
-
-                {/* Lengua Barí — solo datos reales */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Pertinencia de Lengua Barí e Idiomas</h3>
                   <p className="text-xs text-gray-400 mb-4">Valoración de la inclusión lingüística ancestral</p>
                   {datosFiltrados.hayDatosLengua
-                    ? <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={datosFiltrados.analisisLengua}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                          <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
-                          <Tooltip />
-                          <Bar dataKey="value" name="Respuestas" radius={[4, 4, 0, 0]}>
-                            {datosFiltrados.analisisLengua.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
+                    ? <ResponsiveContainer width="100%" height={220}><BarChart data={datosFiltrados.analisisLengua}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" /><XAxis dataKey="name" tick={{ fontSize: 10 }} /><YAxis tick={{ fontSize: 11 }} /><Tooltip /><Bar dataKey="value" name="Respuestas" radius={[4, 4, 0, 0]}>{datosFiltrados.analisisLengua.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}</Bar></BarChart></ResponsiveContainer>
                     : <SinDatos mensaje="Sin respuestas sobre lengua registradas aún." />}
                 </div>
               </div>
@@ -891,20 +789,16 @@ export default function Dashboard() {
         )}
       </main>
 
-      {/* TOAST */}
       {mensajeElim && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <div className="px-6 py-3 rounded-2xl shadow-2xl text-xs font-bold flex items-center gap-2 border"
-            style={mensajeElim.ok
-              ? { background: '#14532d', color: '#4ade80', borderColor: '#166534' }
-              : { background: '#450a0a', color: '#f87171', borderColor: '#7f1d1d' }}>
+            style={mensajeElim.ok ? { background: '#14532d', color: '#4ade80', borderColor: '#166534' } : { background: '#450a0a', color: '#f87171', borderColor: '#7f1d1d' }}>
             {mensajeElim.texto}
             <button onClick={() => setMensajeElim(null)} className="ml-2">✕</button>
           </div>
         </div>
       )}
 
-      {/* MODAL ELIMINACIÓN */}
       {modalEliminar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-3xl shadow-2xl p-6 max-w-sm w-full">
@@ -915,13 +809,11 @@ export default function Dashboard() {
                   <h3 className="font-display font-black text-lg text-gray-900">Mantenimiento de Datos</h3>
                 </div>
                 <div className="space-y-2.5 mb-5">
-                  <button onClick={() => setModalEliminar('confirmar-incompletos')}
-                    className="w-full text-left bg-amber-50/50 border border-amber-200 rounded-xl p-3 hover:bg-amber-100/50 transition-colors">
+                  <button onClick={() => setModalEliminar('confirmar-incompletos')} className="w-full text-left bg-amber-50/50 border border-amber-200 rounded-xl p-3 hover:bg-amber-100/50 transition-colors">
                     <p className="font-bold text-amber-800 text-xs">⚠️ Eliminar Registros Incompletos</p>
                     <p className="text-amber-600 text-[11px] mt-0.5">Limpia las sesiones que no concluyeron el formulario.</p>
                   </button>
-                  <button onClick={() => setModalEliminar('confirmar-todo')}
-                    className="w-full text-left bg-red-50/50 border border-red-200 rounded-xl p-3 hover:bg-red-100/50 transition-colors">
+                  <button onClick={() => setModalEliminar('confirmar-todo')} className="w-full text-left bg-red-50/50 border border-red-200 rounded-xl p-3 hover:bg-red-100/50 transition-colors">
                     <p className="font-bold text-red-700 text-xs">🚨 Vaciar Repositorio Completo</p>
                     <p className="text-red-500 text-[11px] mt-0.5">Borrado en cascada absoluto de todas las tablas.</p>
                   </button>
@@ -938,10 +830,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex gap-2">
                   <button onClick={() => setModalEliminar('menu')} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-xs font-bold">Volver</button>
-                  <button onClick={() => eliminarRegistros('incompletos')} disabled={eliminando}
-                    className="flex-1 py-2.5 rounded-xl text-white bg-amber-600 text-xs font-bold">
-                    {eliminando ? 'Procesando...' : 'Sí, Limpiar'}
-                  </button>
+                  <button onClick={() => eliminarRegistros('incompletos')} disabled={eliminando} className="flex-1 py-2.5 rounded-xl text-white bg-amber-600 text-xs font-bold">{eliminando ? 'Procesando...' : 'Sí, Limpiar'}</button>
                 </div>
               </>
             )}
