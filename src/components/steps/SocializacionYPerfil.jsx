@@ -273,20 +273,21 @@ export default function SocializacionYPerfil({
   }
 
   const handleGuardarLenguas = async (datosLenguas) => {
-  await onGuardarEgreso({
-    ...egresoGuardadoLocal,
-    lenguas: datosLenguas,
-  })
+    // CORRECCIÓN DE MAPEO: Forzamos la propiedad exacta de Supabase
+    await onGuardarEgreso({
+      ...egresoGuardadoLocal,
+      importancia_lengua: datosLenguas?.importanciaLenguas || 'Sin especificar',
+    })
 
-  // Pasar al siguiente programa
-  if (progIdx < programasOrden.length - 1) {
-    setProgIdx(i => i + 1)
-    resetSubpaso()
-  } else {
-    // Encuesta finalizada
-    resetSubpaso()
+    // Pasar al siguiente programa o finalizar
+    if (progIdx < programasOrden.length - 1) {
+      setProgIdx(i => i + 1)
+      resetSubpaso()
+    } else {
+      // Encuesta finalizada
+      resetSubpaso()
+    }
   }
-}
 
   if (!prog) return null
 
