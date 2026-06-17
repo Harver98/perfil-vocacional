@@ -145,7 +145,7 @@ export function useExperiencia() {
           competencia:      p.competencia,
           orden_prioridad:  p.orden,
           comentario_libre: datos.comentario || null,
-          vision_territorial:  datos.visionterritorial || null,
+          vision_territorial: datos.visionTerritorial || null,
         }))
         if (rows.length) await supabase.from('perfil_ingreso').insert(rows)
       } catch (err) { console.warn(err) }
