@@ -534,19 +534,24 @@ const procesarExportacionCSV = () => {
     const competenciesIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
     const competenciesEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
     
-    const certificadoCodigo = rawData.certificados?.find(c => c.participante_id === p.id)?.codigo_verificacion || 'No certificado'
+    // 💡 CORRECCIÓN 1: Se cambia 'codigo_verificacion' por 'codigo_qr' que es el nombre real en tu base de datos
+    const certificadoFila = rawData.certificados?.find(c => c.participante_id === p.id)
+    const certificadoCodigo = certificadoFila ? (certificadoFila.codigo_qr || 'SÍ') : 'No certificado'
 
-    // 🔥 CORRECCIÓN AQUÍ: Búsqueda en profundidad para Lengua Barí e Idiomas
-    // 1. Filtramos todas las filas que le correspondan a este usuario en la tabla respuestas
-    const respuestasDelUsuario = rawData.respuestasTabla?.filter(r => r.sesion_id === p.id) || [];
-    
-    // 2. Buscamos de forma estricta entre sus filas cuál SÍ tiene contenido real en la columna
-    const filaConLengua = respuestasDelUsuario.find(
+    // 1. Buscamos primero en la tabla respuestas asociando por el id del participante (sesion_id)
+    const respuestasDelUsuario = rawData.respuestasTabla?.filter(r => r.sesion_id === p.id) || []
+    let filaConLengua = respuestasDelUsuario.find(
       r => r.importancia_lengua && String(r.importancia_lengua).trim() !== ''
-    );
-    
-    // 3. Si la encontramos usamos el valor, sino dejamos "Sin responder"
-    const respuestaLengua = filaConLengua ? filaConLengua.importancia_lengua : 'Sin responder';
+    )
+
+    // 2. Respaldo de seguridad: si no cruza por ID directo, busca en todo el lote por si está guardado de forma global
+    if (!filaConLengua) {
+      filaConLengua = rawData.respuestasTabla?.find(
+        r => r.sesion_id === p.id && r.importancia_lengua && String(r.importancia_lengua).trim() !== ''
+      )
+    }
+
+    const respuestaLengua = filaConLengua ? filaConLengua.importancia_lengua : 'Sin responder'
 
     return {
       'ID Participante': p.id,
@@ -557,7 +562,7 @@ const procesarExportacionCSV = () => {
       'Tipo de Actor': ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
       '¿Completó Todo?': p.completado ? 'SÍ' : 'NO',
       '¿Participó Antes?': p.participo_antes ? 'SÍ' : 'NO',
-      'Importancia Lengua Barí e Idiomas': respuestaLengua, // <-- Mapeado de forma infalible
+      'Importancia Lengua Barí e Idiomas': respuestaLengua,
       'Programa Preferencia 1': PROG_LABEL[programa1] || programa1,
       'Programa Preferencia 2': PROG_LABEL[programa2] || programa2,
       'Líneas de Interés': lineasRep,
