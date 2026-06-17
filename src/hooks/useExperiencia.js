@@ -18,16 +18,14 @@ export const PASOS = {
 const estadoInicial = {
   paso:             PASOS.BIENVENIDA,
   participanteId:   null,
-  // Datos del participante
   nombre:           '',
   municipio:        '',
   corregimiento:    '',
   vereda:           '',
   tipoActor:        '',
   datosActor:       {},
-  // Selecciones
-  programasOrden:   [],   // ['trabajo_social', 'agronomia', 'administracion']
-  programaActual:   null, // programa siendo socializado ahora
+  programasOrden:   [],
+  programaActual:   null,
   perfilIngreso:    {},
   perfilEgreso:     {},
   lineas:           [],
@@ -35,9 +33,7 @@ const estadoInicial = {
   empleabilidad:    {},
   firma:            null,
   comentarioFinal:  '',
-  // Certificado
   codigoQR:         null,
-  // UI
   guardando:        false,
   error:            null,
 }
@@ -56,7 +52,6 @@ export function useExperiencia() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [])
 
-  // ── SECCIÓN 3: Guardar caracterización ───────────────────────────────────
   const guardarCaracterizacion = useCallback(async (datos) => {
     actualizar({ guardando: true, error: null })
 
@@ -117,7 +112,6 @@ export function useExperiencia() {
     }
   }, [actualizar])
 
-  // ── SECCIÓN 4: Guardar orden de programas ────────────────────────────────
   const guardarProgramasOrden = useCallback(async (orden) => {
     actualizar({ programasOrden: orden, guardando: true })
 
@@ -133,13 +127,12 @@ export function useExperiencia() {
     }
 
     actualizar({
-      guardando:     false,
-      programaActual: orden[0], // iniciar con el programa de mayor preferencia
-      paso:          PASOS.SOCIALIZACION,
+      guardando:      false,
+      programaActual: orden[0],
+      paso:           PASOS.SOCIALIZACION,
     })
   }, [estado.participanteId, actualizar])
 
-  // ── SECCIÓN 6: Guardar perfil de ingreso ─────────────────────────────────
   const guardarPerfilIngreso = useCallback(async (datos) => {
     actualizar({ guardando: true })
 
@@ -147,21 +140,20 @@ export function useExperiencia() {
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
         const rows = datos.prioridades.map(p => ({
-          participante_id: estado.participanteId,
-          programa:        datos.programa,
-          categoria:       p.categoria,
-          competencia:     p.competencia,
-          orden_prioridad: p.orden,
+          participante_id:  estado.participanteId,
+          programa:         datos.programa,
+          competencia:      p.competencia,
+          orden_prioridad:  p.orden,
           comentario_libre: datos.comentario || null,
         }))
-        await supabase.from('perfil_ingreso').insert(rows)
+        if (rows.length) await supabase.from('perfil_ingreso').insert(rows)
       } catch (err) { console.warn(err) }
     }
 
     actualizar({ perfilIngreso: nuevo, guardando: false, paso: PASOS.PERFIL_EGRESO })
   }, [estado.participanteId, estado.perfilIngreso, actualizar])
 
-  // ── SECCIÓN 7: Guardar perfil de egreso + Lenguas ────────────────────────
+  // ── CORRECCIÓN PRINCIPAL: importancia_lengua se guarda en tabla 'respuestas' ──
   const guardarPerfilEgreso = useCallback(async (datos) => {
     actualizar({ guardando: true })
 
@@ -169,30 +161,27 @@ export function useExperiencia() {
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
         const rows = datos.prioridades.map(p => ({
-          participante_id: estado.participanteId,
-          programa:        datos.programa,
-          competencia:     p.competencia,
-          orden_prioridad: p.orden,
+          participante_id:  estado.participanteId,
+          programa:         datos.programa,
+          competencia:      p.competencia,
+          orden_prioridad:  p.orden,
           comentario_libre: datos.comentario || null,
         }))
-        await supabase.from('perfil_egreso').insert(rows)
+        if (rows.length) await supabase.from('perfil_egreso').insert(rows)
 
-        // Si se adjuntan datos de lenguas e interculturalidad, se insertan en su respectiva tabla
-        if (datos.lenguas) {
-          await supabase.from('interculturalidad_lenguas').insert({
-            participante_id: estado.participanteId,
-            integracion:     datos.lenguas.integracion,
-            explicacion:     datos.lenguas.explicacion || null,
-            abierta_lenguas: datos.lenguas.abiertaLenguas || null,
-          })
-        }
-      } catch (err) { console.warn(err) }
+        // datos.importancia_lengua viene de SocializacionYPerfil → handleGuardarLenguas
+        if (datos.importancia_lengua) {
+            await supabase
+              .from('participantes')
+              .update({ importancia_lengua: datos.importancia_lengua })
+              .eq('id', estado.participanteId)
+          }
+      } catch (err) { console.warn('Error guardando egreso:', err) }
     }
 
     actualizar({ perfilEgreso: nuevo, guardando: false, paso: PASOS.LINEAS_INVESTIGACION })
   }, [estado.participanteId, estado.perfilEgreso, actualizar])
 
-  // ── SECCIÓN 8: Guardar líneas ─────────────────────────────────────────────
   const guardarLineas = useCallback(async (lineasSeleccionadas) => {
     actualizar({ guardando: true })
 
@@ -210,7 +199,6 @@ export function useExperiencia() {
     actualizar({ lineas: lineasSeleccionadas, guardando: false, paso: PASOS.ELECTIVAS })
   }, [estado.participanteId, estado.programaActual, actualizar])
 
-  // ── SECCIÓN 9: Guardar electivas ──────────────────────────────────────────
   const guardarElectivas = useCallback(async (electivasSeleccionadas) => {
     actualizar({ guardando: true })
 
@@ -228,7 +216,6 @@ export function useExperiencia() {
     actualizar({ electivas: electivasSeleccionadas, guardando: false, paso: PASOS.EMPLEABILIDAD })
   }, [estado.participanteId, estado.programaActual, actualizar])
 
-  // ── SECCIÓN 10: Guardar manifiesto y generar certificado ──────────────────
   const guardarManifiesto = useCallback(async (datos) => {
     actualizar({ guardando: true, error: null })
 
@@ -245,19 +232,15 @@ export function useExperiencia() {
           firma_svg:         datos.firma || null,
           acepta_manifiesto: datos.acepta || false,
         })
-
         await supabase.from('certificados').insert({
           participante_id: estado.participanteId,
           codigo_qr:       codigo,
           programas:       estado.programasOrden,
         })
-
         await supabase.from('participantes')
           .update({ completado: true })
           .eq('id', estado.participanteId)
-      } catch (err) {
-        console.warn('Error guardando manifiesto:', err)
-      }
+      } catch (err) { console.warn('Error guardando manifiesto:', err) }
     }
 
     actualizar({
@@ -270,7 +253,6 @@ export function useExperiencia() {
     })
   }, [estado.participanteId, estado.programasOrden, actualizar])
 
-  // ── Registrar video visto ─────────────────────────────────────────────────
   const registrarVideoVisto = useCallback(async (videoId, seccion) => {
     if (!supabaseConfigurado || !estado.participanteId || estado.participanteId?.startsWith('demo-')) return
     try {

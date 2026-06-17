@@ -1,16 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { PROGRAMAS } from '../../data/programas'
 
 // ── Drag & Drop ───────────────────────────────────────────────────────────────
-function DragDropCompetencias({ items, onCambio, accentColor, placeholder = '← Arrastra aquí' }) {
+function DragDropCompetencias({ items, onCambio, accentColor }) {
   const [opciones,    setOpciones]    = useState([...items])
   const [prioridades, setPrioridades] = useState([])
   const [dragging,    setDragging]    = useState(null)
   const [fromCol,     setFromCol]     = useState(null)
 
-  useEffect(() => { onCambio(prioridades) }, [prioridades])
+  // Usamos useCallback para que onCambio no genere dependencia estale
+  const notificar = useCallback((lista) => { onCambio(lista) }, [onCambio])
+
+  useEffect(() => { notificar(prioridades) }, [prioridades, notificar])
 
   const startDrag = (item, col) => { setDragging(item); setFromCol(col) }
+
   const dropEn = (col) => {
     if (!dragging || fromCol === col) { setDragging(null); return }
     if (col === 'pri') {
@@ -22,6 +26,7 @@ function DragDropCompetencias({ items, onCambio, accentColor, placeholder = '←
     }
     setDragging(null); setFromCol(null)
   }
+
   const moverA = (item, destino) => {
     if (destino === 'pri') {
       setOpciones(p => p.filter(i => i !== item))
@@ -33,12 +38,17 @@ function DragDropCompetencias({ items, onCambio, accentColor, placeholder = '←
   }
 
   const Chip = ({ item, col }) => (
-    <div draggable
+    <div
+      draggable
       onDragStart={() => startDrag(item, col)}
       onDragEnd={() => setDragging(null)}
       onClick={() => moverA(item, col === 'ops' ? 'pri' : 'ops')}
       className="rounded-xl px-3 py-2 text-xs font-body border cursor-pointer hover:shadow-lg active:scale-95 transition-all duration-150 select-none"
-      style={{ opacity: dragging === item ? 0.4 : 1, background: 'white', borderColor: '#d1d5db', color: '#1f2937', fontWeight: 500, boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}
+      style={{
+        opacity: dragging === item ? 0.4 : 1,
+        background: 'white', borderColor: '#d1d5db', color: '#1f2937',
+        fontWeight: 500, boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      }}
       title={col === 'ops' ? 'Toca para priorizar' : 'Toca para quitar'}>
       {item}
     </div>
@@ -46,17 +56,23 @@ function DragDropCompetencias({ items, onCambio, accentColor, placeholder = '←
 
   return (
     <div className="grid grid-cols-2 gap-3">
-      <div onDragOver={e => e.preventDefault()} onDrop={() => dropEn('ops')}
+      <div
+        onDragOver={e => e.preventDefault()}
+        onDrop={() => dropEn('ops')}
         className="min-h-36 rounded-2xl border-2 border-dashed p-3"
         style={{ borderColor: `${accentColor}50`, background: 'rgba(255,255,255,0.12)' }}>
         <p className="text-xs font-display font-bold mb-1 uppercase tracking-wide text-white">OPCIONES</p>
         <p className="text-xs mb-2" style={{ color: 'rgba(255,255,255,0.55)' }}>toca para priorizar</p>
         <div className="flex flex-wrap gap-1.5">
           {opciones.map(i => <Chip key={i} item={i} col="ops" />)}
-          {opciones.length === 0 && <p className="text-xs py-3 w-full text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>Todas priorizadas ✓</p>}
+          {opciones.length === 0 && (
+            <p className="text-xs py-3 w-full text-center" style={{ color: 'rgba(255,255,255,0.4)' }}>Todas priorizadas ✓</p>
+          )}
         </div>
       </div>
-      <div onDragOver={e => e.preventDefault()} onDrop={() => dropEn('pri')}
+      <div
+        onDragOver={e => e.preventDefault()}
+        onDrop={() => dropEn('pri')}
         className="min-h-36 rounded-2xl border-2 border-dashed p-3"
         style={{ borderColor: `${accentColor}80`, background: 'rgba(255,255,255,0.18)' }}>
         <p className="text-xs font-display font-bold mb-2 uppercase tracking-wide text-white">MIS PRIORIDADES</p>
@@ -67,7 +83,11 @@ function DragDropCompetencias({ items, onCambio, accentColor, placeholder = '←
               <Chip item={i} col="pri" />
             </div>
           ))}
-          {prioridades.length === 0 && <p className="text-xs text-center py-4 leading-snug" style={{ color: 'rgba(255,255,255,0.45)' }}>{placeholder}</p>}
+          {prioridades.length === 0 && (
+            <p className="text-xs text-center py-4 leading-snug" style={{ color: 'rgba(255,255,255,0.45)' }}>
+              ← Toca o arrastra para priorizar
+            </p>
+          )}
         </div>
       </div>
     </div>
@@ -84,15 +104,16 @@ function Card({ children }) {
   )
 }
 
-// ── Radio con estilo oscuro ───────────────────────────────────────────────────
 function RadioOpcion({ label, seleccionado, onSeleccionar }) {
   return (
-    <button onClick={onSeleccionar}
+    <button
+      onClick={onSeleccionar}
       className="w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3"
       style={seleccionado
         ? { background: 'rgba(255,255,255,0.22)', border: '2px solid rgba(255,255,255,0.7)', color: '#ffffff' }
         : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.8)' }}>
-      <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+      <div
+        className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
         style={{ borderColor: seleccionado ? '#ffffff' : 'rgba(255,255,255,0.4)' }}>
         {seleccionado && <div className="w-2 h-2 rounded-full bg-white" />}
       </div>
@@ -101,53 +122,29 @@ function RadioOpcion({ label, seleccionado, onSeleccionar }) {
   )
 }
 
-// ── Sección lenguas ───────────────────────────────────────────────────────────
-// ── Sección lenguas ───────────────────────────────────────────────────────────
-function SeccionLenguas({ onGuardar, txtMuted, txtSub }) {
+function SeccionLenguas({ onGuardar, txtMuted }) {
   const [importanciaLenguas, setImportanciaLenguas] = useState('')
-
-  const puedeGuardar = importanciaLenguas !== ''
 
   return (
     <div className="space-y-4">
-
-      {/* Encabezado */}
-      <div
-        className="flex items-center gap-3 pb-4"
-        style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}
-      >
+      <div className="flex items-center gap-3 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.15)' }}>
         <span className="text-3xl">🌐</span>
         <div>
-          <p className="font-display font-bold text-white text-base">
-            Lenguas e Interculturalidad
-          </p>
-          <p className="font-body text-xs" style={txtMuted}>
-            Una reflexión final sobre la formación universitaria en el Catatumbo
-          </p>
+          <p className="font-display font-bold text-white text-base">Lenguas e Interculturalidad</p>
+          <p className="font-body text-xs" style={txtMuted}>Una reflexión final sobre la formación universitaria en el Catatumbo</p>
         </div>
       </div>
 
-      {/* Pregunta única */}
       <Card>
         <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
           ¿Qué tan importante considera que los estudiantes y futuros profesionales
           de la Universidad Nacional del Catatumbo desarrollen competencias en una
-          segunda lengua o en lenguas propias del territorio (como la lengua del
-          pueblo Barí) para su formación y ejercicio profesional?
+          segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí)
+          para su formación y ejercicio profesional?
         </p>
-
-        <p className="font-body text-xs mb-4" style={txtMuted}>
-          Seleccione una opción
-        </p>
-
+        <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
         <div className="space-y-2">
-          {[
-            'Muy importante',
-            'Importante',
-            'Medianamente importante',
-            'Poco importante',
-            'Nada importante'
-          ].map(op => (
+          {['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante'].map(op => (
             <RadioOpcion
               key={op}
               label={op}
@@ -158,48 +155,24 @@ function SeccionLenguas({ onGuardar, txtMuted, txtSub }) {
         </div>
       </Card>
 
-      {/* Botón continuar */}
       <button
-        onClick={() =>
-          onGuardar({
-            importanciaLenguas
-          })
-        }
-        disabled={!puedeGuardar}
+        onClick={() => onGuardar({ importanciaLenguas })}
+        disabled={!importanciaLenguas}
         className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all"
-        style={
-          puedeGuardar
-            ? {
-                background: 'rgba(255,255,255,0.25)',
-                border: '2px solid rgba(255,255,255,0.55)',
-                textShadow: '0 1px 4px rgba(0,0,0,0.4)',
-              }
-            : {
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                color: 'rgba(255,255,255,0.4)',
-                cursor: 'not-allowed',
-              }
-        }
-      >
-        {puedeGuardar
-          ? 'Continuar →'
-          : 'Selecciona una opción para continuar'}
+        style={importanciaLenguas
+          ? { background: 'rgba(255,255,255,0.25)', border: '2px solid rgba(255,255,255,0.55)', textShadow: '0 1px 4px rgba(0,0,0,0.4)' }
+          : { background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: 'rgba(255,255,255,0.4)', cursor: 'not-allowed' }}>
+        {importanciaLenguas ? 'Continuar →' : 'Selecciona una opción para continuar'}
       </button>
     </div>
   )
 }
 
 // ── Componente principal ──────────────────────────────────────────────────────
-export default function SocializacionYPerfil({
-  programasOrden,
-  onGuardarIngreso,
-  onGuardarEgreso,
-  guardando,
-}) {
-  const [progIdx,    setProgIdx]    = useState(0)
-  // 0=socialización 1=ingreso 2=egreso 3=lenguas (solo último programa)
-  const [subpaso,    setSubpaso]    = useState(0)
+export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso, onGuardarEgreso, guardando }) {
+  const [progIdx,  setProgIdx]  = useState(0)
+  const [subpaso,  setSubpaso]  = useState(0)
+  const [errorMsg, setErrorMsg] = useState(null)
 
   // Ingreso
   const [priIngresoSer,   setPriIngresoSer]   = useState([])
@@ -214,8 +187,8 @@ export default function SocializacionYPerfil({
   const [priEgresoHacer,  setPriEgresoHacer]  = useState([])
   const [comEgreso,       setComEgreso]       = useState('')
 
-  // Guardado local del egreso hasta que se completen las lenguas
-  const [egresoGuardadoLocal, setEgresoGuardadoLocal] = useState(null)
+  // useRef: valor disponible sincrónicamente sin delay de setState
+  const egresoGuardadoRef = useRef(null)
 
   const programaId = programasOrden[progIdx]
   const prog       = PROGRAMAS.find(p => p.id === programaId)
@@ -223,14 +196,21 @@ export default function SocializacionYPerfil({
 
   const resetSubpaso = () => {
     setSubpaso(0)
+    setErrorMsg(null)
     setPriIngresoSer([]); setPriIngresoHacer([]); setPriIngresoSaber([])
     setComIngreso(''); setImaginaPrograma('')
     setPriEgresoSaber([]); setPriEgresoSer([]); setPriEgresoHacer([])
     setComEgreso('')
+    // Limpiamos también el egreso temporal para evitar contaminación entre programas
+    egresoGuardadoRef.current = null
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const ir = (paso) => { setSubpaso(paso); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+  const ir = (paso) => {
+    setErrorMsg(null)
+    setSubpaso(paso)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleGuardarIngreso = async () => {
     const prioridades = [
@@ -238,60 +218,46 @@ export default function SocializacionYPerfil({
       ...priIngresoHacer.map((c, i) => ({ categoria: 'hacer', competencia: c, orden: i + 1 })),
       ...priIngresoSaber.map((c, i) => ({ categoria: 'saber', competencia: c, orden: i + 1 })),
     ]
-    await onGuardarIngreso({ programa: programaId, prioridades, comentario: comIngreso })
-    ir(2)
+    try {
+      await onGuardarIngreso({ programa: programaId, prioridades, comentario: comIngreso })
+      ir(2)
+    } catch (e) {
+      setErrorMsg('Error al guardar perfil de ingreso. Intenta de nuevo.')
+    }
   }
 
-    const handleGuardarEgreso = async () => {
+  const handleGuardarEgreso = async () => {
     const prioridades = [
-      ...priEgresoSaber.map((c, i) => ({
-        categoria: 'saber',
-        competencia: c,
-        orden: i + 1
-      })),
-      ...priEgresoSer.map((c, i) => ({
-        categoria: 'ser',
-        competencia: c,
-        orden: i + 1
-      })),
-      ...priEgresoHacer.map((c, i) => ({
-        categoria: 'hacer',
-        competencia: c,
-        orden: i + 1
-      })),
+      ...priEgresoSaber.map((c, i) => ({ categoria: 'saber', competencia: c, orden: i + 1 })),
+      ...priEgresoSer.map((c, i)   => ({ categoria: 'ser',   competencia: c, orden: i + 1 })),
+      ...priEgresoHacer.map((c, i) => ({ categoria: 'hacer', competencia: c, orden: i + 1 })),
     ]
-
-    // Guardar temporalmente
-    setEgresoGuardadoLocal({
-      programa: programaId,
-      prioridades,
-      comentario: comEgreso
-    })
-
-    // SIEMPRE mostrar la pregunta de lenguas
+    // Guardamos localmente y siempre pasamos a lenguas antes de persistir
+    egresoGuardadoRef.current = { programa: programaId, prioridades, comentario: comEgreso }
     ir(3)
   }
 
   const handleGuardarLenguas = async (datosLenguas) => {
-    // CORRECCIÓN DE MAPEO: Forzamos la propiedad exacta de Supabase
-    await onGuardarEgreso({
-      ...egresoGuardadoLocal,
-      importancia_lengua: datosLenguas?.importanciaLenguas || 'Sin especificar',
-    })
+    if (!egresoGuardadoRef.current) return
+    try {
+      await onGuardarEgreso({
+        ...egresoGuardadoRef.current,
+        importancia_lengua: datosLenguas?.importanciaLenguas || 'Sin especificar',
+      })
 
-    // Pasar al siguiente programa o finalizar
-    if (progIdx < programasOrden.length - 1) {
-      setProgIdx(i => i + 1)
-      resetSubpaso()
-    } else {
-      // Encuesta finalizada
-      resetSubpaso()
+      if (progIdx < programasOrden.length - 1) {
+        setProgIdx(i => i + 1)
+        resetSubpaso()
+      } else {
+        resetSubpaso()
+      }
+    } catch (e) {
+      setErrorMsg('Error al guardar. Intenta de nuevo.')
     }
   }
 
   if (!prog) return null
 
-  // ── Estilos reutilizables ─────────────────────────────────────────────────
   const T = {
     principal: { color: '#ffffff', textShadow: '0 1px 6px rgba(0,0,0,0.6)' },
     sub:       { color: 'rgba(255,255,255,0.88)' },
@@ -322,9 +288,9 @@ export default function SocializacionYPerfil({
   }
 
   const SECCIONES_INGRESO = [
-    { label: '💡 SER — Valores y actitudes',    sub: '¿Qué valores debe tener quien ingrese?',   items: prog.perfilIngreso.ser,   setState: setPriIngresoSer   },
-    { label: '⚡ HACER — Habilidades prácticas', sub: '¿Qué debe saber hacer quien ingrese?',     items: prog.perfilIngreso.hacer, setState: setPriIngresoHacer },
-    { label: '📘 SABER — Conocimientos previos', sub: '¿Qué debe conocer quien ingrese?',         items: prog.perfilIngreso.saber, setState: setPriIngresoSaber },
+    { label: '💡 SER — Valores y actitudes',    sub: '¿Qué valores debe tener quien ingrese?', items: prog.perfilIngreso.ser,   setState: setPriIngresoSer   },
+    { label: '⚡ HACER — Habilidades prácticas', sub: '¿Qué debe saber hacer quien ingrese?',   items: prog.perfilIngreso.hacer, setState: setPriIngresoHacer },
+    { label: '📘 SABER — Conocimientos previos', sub: '¿Qué debe conocer quien ingrese?',       items: prog.perfilIngreso.saber, setState: setPriIngresoSaber },
   ]
   const SECCIONES_EGRESO = [
     { label: '📘 SABER — Competencias técnicas',        sub: '¿Qué debe saber hacer profesionalmente?',   items: prog.perfilEgreso.saber, setState: setPriEgresoSaber },
@@ -346,12 +312,16 @@ export default function SocializacionYPerfil({
                 style={{ width: i === progIdx ? 32 : 8, background: i <= progIdx ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)' }} />
             ))}
           </div>
-          <span className="font-body text-xs" style={T.muted}>
-            {prog.nombre} · {ETIQUETAS[subpaso]}
-          </span>
+          <span className="font-body text-xs" style={T.muted}>{prog.nombre} · {ETIQUETAS[subpaso]}</span>
         </div>
 
-        {/* ── MOMENTO 5: Socialización (Video removido) ────────────────────── */}
+        {errorMsg && (
+          <div className="mb-4 bg-red-900/60 border border-red-400/40 rounded-2xl px-4 py-3 text-red-200 text-sm font-body">
+            ⚠️ {errorMsg}
+          </div>
+        )}
+
+        {/* ── MOMENTO 5: Socialización ─────────────────────────────────────── */}
         {subpaso === 0 && (
           <div className="space-y-5 animate-fade-up">
             <div>
@@ -359,7 +329,6 @@ export default function SocializacionYPerfil({
               <h2 className="font-display text-3xl font-black mb-2" style={T.principal}>{prog.nombre}</h2>
               <p className="font-body text-base leading-relaxed" style={T.sub}>{prog.descripcion}</p>
             </div>
-
             <Card>
               <p className="text-xs font-display font-bold uppercase tracking-widest mb-3" style={T.muted}>¿Qué aporta al Catatumbo?</p>
               {prog.beneficios.map((b, i) => (
@@ -369,20 +338,15 @@ export default function SocializacionYPerfil({
                 </div>
               ))}
             </Card>
-
             <Card>
               <p className="text-xs font-display font-bold uppercase tracking-widest mb-2" style={T.muted}>Pertinencia territorial</p>
               <p className="font-body text-sm leading-relaxed" style={T.sub}>{prog.justificacion}</p>
             </Card>
-
             <Card>
-              <p className="font-display font-bold text-sm mb-3 text-white">
-                ¿Cómo imagina que este programa transformará el territorio?
-              </p>
+              <p className="font-display font-bold text-sm mb-3 text-white">¿Cómo imagina que este programa transformará el territorio?</p>
               <textarea rows={3} value={imaginaPrograma} onChange={e => setImaginaPrograma(e.target.value)}
                 placeholder="Comparte tu visión..." style={T.textarea} />
             </Card>
-
             <button onClick={() => ir(1)} style={T.btnPrincipal} className="w-full py-4 rounded-2xl font-display font-bold text-lg transition-all">
               Validar perfil de ingreso →
             </button>
@@ -397,28 +361,23 @@ export default function SocializacionYPerfil({
                 <span>{prog.emoji}</span>
                 <span className="font-body text-sm" style={T.sub}>Perfil de Ingreso</span>
               </div>
-              <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>
-                ¿Quién debería estudiar {prog.nombre}?
-              </h2>
+              <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>¿Quién debería estudiar {prog.nombre}?</h2>
               <p className="font-body text-sm leading-relaxed" style={T.sub}>
                 Toca o arrastra las competencias hacia "Mis Prioridades" para ordenarlas según su importancia.
               </p>
             </div>
-
             {SECCIONES_INGRESO.map(sec => (
               <Card key={sec.label}>
                 <p className="font-display font-bold mb-1 text-white">{sec.label}</p>
                 <p className="font-body text-xs mb-3" style={T.muted}>{sec.sub}</p>
-                <DragDropCompetencias items={sec.items} onCambio={sec.setState} accentColor={prog.colorAccent} placeholder="← Toca o arrastra para priorizar" />
+                <DragDropCompetencias items={sec.items} onCambio={sec.setState} accentColor={prog.colorAccent} />
               </Card>
             ))}
-
             <Card>
               <p className="font-display font-bold text-sm mb-3 text-white">✏️ {prog.preguntaAbiertaIngreso}</p>
               <textarea rows={3} value={comIngreso} onChange={e => setComIngreso(e.target.value)}
                 placeholder="Tu aporte es muy valioso para el territorio..." style={T.textarea} />
             </Card>
-
             <div className="flex gap-3">
               <button onClick={() => ir(0)} style={T.btnVolver} className="flex-1">← Volver</button>
               <button onClick={handleGuardarIngreso} disabled={guardando} style={T.btnPrincipal} className="flex-1">
@@ -443,54 +402,44 @@ export default function SocializacionYPerfil({
                 Prioriza las competencias más importantes para los egresados que trabajarán en el Catatumbo.
               </p>
             </div>
-
             {SECCIONES_EGRESO.map(sec => (
               <Card key={sec.label}>
                 <p className="font-display font-bold mb-1 text-white">{sec.label}</p>
                 <p className="font-body text-xs mb-3" style={T.muted}>{sec.sub}</p>
-                <DragDropCompetencias items={sec.items} onCambio={sec.setState} accentColor={prog.colorAccent} placeholder="← Toca o arrastra para priorizar" />
+                <DragDropCompetencias items={sec.items} onCambio={sec.setState} accentColor={prog.colorAccent} />
               </Card>
             ))}
-
             <Card>
               <p className="font-display font-bold text-sm mb-3 text-white">
                 ✏️ ¿Qué le gustaría que distinguiera a los profesionales egresados de{' '}
                 <span style={{ color: 'rgba(255,255,255,0.7)' }}>{prog.nombre}</span>{' '}
-                cuando trabajen en el Catatumbo? Por favor describa los conocimientos,
-                capacidades, valores o actitudes que considera más importantes.
+                cuando trabajen en el Catatumbo?
               </p>
               <textarea rows={3} value={comEgreso} onChange={e => setComEgreso(e.target.value)}
                 placeholder="Describe lo que distinguiría a un buen profesional del Catatumbo..." style={T.textarea} />
             </Card>
-
             <div className="flex gap-3">
               <button onClick={() => ir(1)} style={T.btnVolver} className="flex-1">← Volver</button>
               <button onClick={handleGuardarEgreso} disabled={guardando} style={T.btnPrincipal} className="flex-1">
                 {guardando ? 'Guardando...'
-                  : esUltimo ? 'Reflexión final →'
-                  : `Siguiente: ${PROGRAMAS.find(p => p.id === programasOrden[progIdx + 1])?.nombre} →`}
+                  : esUltimo
+                    ? 'Reflexión final →'
+                    : `Siguiente: ${PROGRAMAS.find(p => p.id === programasOrden[progIdx + 1])?.nombre} →`}
               </button>
             </div>
           </div>
         )}
 
-        {/* ── LENGUAS (solo después del último programa) ────────────────────── */}
+        {/* ── LENGUAS ────────────────────────────────────────────────────────── */}
         {subpaso === 3 && (
           <div className="animate-fade-up">
             <div className="mb-6">
-              <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>
-                Una reflexión final sobre el territorio
-              </h2>
+              <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>Una reflexión final sobre el territorio</h2>
               <p className="font-body text-sm leading-relaxed" style={T.sub}>
-                Antes de continuar, queremos conocer tu perspectiva sobre las lenguas
-                y la interculturalidad en la universidad del Catatumbo.
+                Antes de continuar, queremos conocer tu perspectiva sobre las lenguas y la interculturalidad.
               </p>
             </div>
-            <SeccionLenguas
-              onGuardar={handleGuardarLenguas}
-              txtMuted={T.muted}
-              txtSub={T.sub}
-            />
+            <SeccionLenguas onGuardar={handleGuardarLenguas} txtMuted={T.muted} txtSub={T.sub} />
           </div>
         )}
 

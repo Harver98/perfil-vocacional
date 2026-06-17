@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 const CAPSULAS = [
   {
@@ -6,12 +6,10 @@ const CAPSULAS = [
     titulo: '¿Por qué una oferta académica para el Catatumbo?',
     subtitulo: 'Resultados de la primera fase de socialización',
     descripcion: 'A partir de los talleres realizados con la comunidad, profesores y estudiantes en la primera fase, identificamos las profundas brechas de acceso a la educación superior y las oportunidades urgentes de desarrollo regional en nuestro territorio.',
-    // La cápsula 1 NO lleva videoId para activar el modo "Resultados de Talleres"
-    videoId: null, 
+    videoId: null,
     color: 'linear-gradient(160deg, rgb(22,101,52) 0%, rgb(34,139,34) 60%, rgb(16,185,129) 100%)',
     emoji: '🌿',
-    // Datos específicos para la Cápsula 1
-    fotoActividad: '/territorio-rio2.jpg', // ← Asegúrate de que esta ruta o tu foto exista en /public
+    fotoActividad: '/territorio-rio2.jpg',
     comentariosTaller: [
       "«Necesitamos carreras que se queden en la región para trabajar nuestra tierra»",
       "«La distancia y los costos hacían imposible que nuestros jóvenes estudiaran»"
@@ -26,7 +24,7 @@ const CAPSULAS = [
     titulo: '¿Qué programas se están proponiendo?',
     subtitulo: 'Tres caminos para transformar el territorio',
     descripcion: 'Presentamos de manera sencilla los programas académicos en validación. Mira y escucha el video realizado por el equipo donde se exponen sintéticamente los perfiles de la futura oferta.',
-    videoId: 'YJ9aW-chNCw', // ← Aquí pones el ID de YouTube cuando subas el video de Drive
+    videoId: 'YJ9aW-chNCw',
     color: 'linear-gradient(160deg, rgb(91,45,142) 0%, rgb(123,63,168) 60%, rgb(155,79,192) 100%)',
     emoji: '🎓',
     stats: [
@@ -37,13 +35,39 @@ const CAPSULAS = [
   },
 ]
 
-function VideoPlayer({ videoId, onTerminado, registrar }) {
-  const [progreso,  setProgreso]  = useState(0)
-  const [listo,     setListo]     = useState(false)
-  const [playerOK,  setPlayerOK]  = useState(false)
-  const playerRef  = useRef(null)
-  const divRef     = useRef(null)
-  const intervalo  = useRef(null)
+// Singleton para garantizar que la API de YouTube se carga una sola vez
+let ytApiReady = false
+let ytApiCallbacks = []
+
+function cargarYouTubeAPI(cb) {
+  if (ytApiReady) { cb(); return }
+  ytApiCallbacks.push(cb)
+  if (document.querySelector('script[src="https://www.youtube.com/iframe_api"]')) return
+  const tag = document.createElement('script')
+  tag.src = 'https://www.youtube.com/iframe_api'
+  document.head.appendChild(tag)
+  window.onYouTubeIframeAPIReady = () => {
+    ytApiReady = true
+    ytApiCallbacks.forEach(fn => fn())
+    ytApiCallbacks = []
+  }
+}
+
+function VideoPlayer({ videoId, onTerminado }) {
+  const [progreso, setProgreso] = useState(0)
+  const [listo, setListo] = useState(false)
+  const [playerOK, setPlayerOK] = useState(false)
+  const playerRef = useRef(null)
+  const divRef = useRef(null)
+  const intervalo = useRef(null)
+
+  const handleTerminado = useCallback(() => {
+    if (!listo) {
+      setListo(true)
+      setProgreso(100)
+      onTerminado?.()
+    }
+  }, [listo, onTerminado])
 
   useEffect(() => {
     if (!videoId) return
@@ -54,23 +78,18 @@ function VideoPlayer({ videoId, onTerminado, registrar }) {
 
     const initPlayer = () => {
       if (!divRef.current) return
-
-      if (playerRef.current && typeof playerRef.current.destroy === 'function') {
-        try { playerRef.current.destroy() } catch(e) {}
+      if (playerRef.current?.destroy) {
+        try { playerRef.current.destroy() } catch (_) {}
       }
 
       playerRef.current = new window.YT.Player(divRef.current, {
-        videoId: videoId,
-        playerVars: { 
-          rel: 0, 
-          modestbranding: 1, 
-          origin: window.location.origin,
-          autoplay: 0 
-        },
+        videoId,
+        playerVars: { rel: 0, modestbranding: 1, origin: window.location.origin, autoplay: 0 },
         events: {
           onReady: () => setPlayerOK(true),
           onStateChange: (e) => {
-            if (e.data === 1) { // playing
+            if (e.data === 1) {
+              clearInterval(intervalo.current)
               intervalo.current = setInterval(() => {
                 try {
                   const cur = playerRef.current.getCurrentTime()
@@ -78,53 +97,27 @@ function VideoPlayer({ videoId, onTerminado, registrar }) {
                   if (dur > 0) {
                     const pct = Math.round((cur / dur) * 100)
                     setProgreso(Math.min(pct, 99))
-                    if (pct >= 95) { 
-                      setListo(true)
-                      onTerminado?.()
-                      clearInterval(intervalo.current) 
+                    if (pct >= 95) {
+                      clearInterval(intervalo.current)
+                      handleTerminado()
                     }
                   }
-                } catch {}
+                } catch (_) {}
               }, 1000)
             }
             if (e.data === 2) clearInterval(intervalo.current)
-            if (e.data === 0) { // ended
-              setListo(true)
-              setProgreso(100)
+            if (e.data === 0) {
               clearInterval(intervalo.current)
-              if (registrar) registrar()
-              onTerminado?.()
+              handleTerminado()
             }
           },
         },
       })
     }
 
-    if (!window.YT) {
-      const yaExisteScript = document.querySelector('script[src="https://www.youtube.com/iframe_api"]')
-      if (!yaExisteScript) {
-        const tag = document.createElement('script')
-        tag.src = 'https://www.youtube.com/iframe_api'
-        document.head.appendChild(tag)
-      }
-      
-      const checkReady = setInterval(() => {
-        if (window.YT && window.YT.Player) {
-          clearInterval(checkReady)
-          initPlayer()
-        }
-      }, 100)
-      
-      window.onYouTubeIframeAPIReady = () => {
-        clearInterval(checkReady)
-        initPlayer()
-      }
-    } else if (window.YT.Player) {
-      initPlayer()
-    }
-
-    return () => { clearInterval(intervalo.current) }
-  }, [videoId])
+    cargarYouTubeAPI(initPlayer)
+    return () => clearInterval(intervalo.current)
+  }, [videoId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mb-4">
@@ -156,20 +149,18 @@ function VideoPlayer({ videoId, onTerminado, registrar }) {
 
 export default function Capsula({ onContinuar, registrarVideoVisto }) {
   const [indice, setIndice] = useState(0)
-  // Si la cápsula actual NO tiene video, se marca automáticamente como "lista" para poder continuar
   const capsula = CAPSULAS[indice]
   const [videoListo, setVideoListo] = useState(!capsula.videoId)
   const esUltima = indice === CAPSULAS.length - 1
 
-  // Efecto para actualizar la disponibilidad del botón al cambiar de cápsula
   useEffect(() => {
     setVideoListo(!capsula.videoId)
   }, [indice, capsula.videoId])
 
-  const handleVideoTerminado = () => {
+  const handleVideoTerminado = useCallback(() => {
     setVideoListo(true)
     registrarVideoVisto?.(capsula.videoId || capsula.id, capsula.id)
-  }
+  }, [capsula, registrarVideoVisto])
 
   const handleSiguiente = () => {
     if (esUltima) {
@@ -183,7 +174,6 @@ export default function Capsula({ onContinuar, registrarVideoVisto }) {
     <div className="min-h-screen transition-colors duration-1000" style={{ background: capsula.color }}>
       <div className="max-w-2xl mx-auto px-5 py-10">
 
-        {/* Indicador de cápsula */}
         <div className="flex items-center gap-3 mb-7">
           <div className="flex gap-1.5">
             {CAPSULAS.map((_, i) => (
@@ -194,21 +184,17 @@ export default function Capsula({ onContinuar, registrarVideoVisto }) {
           <span className="text-white/50 font-body text-xs">Cápsula {indice + 1} de {CAPSULAS.length}</span>
         </div>
 
-        {/* Emoji y título */}
         <div className="mb-6">
           <span className="text-5xl block mb-4">{capsula.emoji}</span>
           <h2 className="font-display text-3xl font-black text-white leading-tight mb-2">{capsula.titulo}</h2>
           <p className="text-white/70 font-body text-base">{capsula.subtitulo}</p>
         </div>
 
-        {/* Renderizado Condicional: DINÁMICA CÁPSULA 1 (Foto y Comentarios) */}
         {!capsula.videoId && (
           <div className="space-y-4 mb-6">
-            {/* Foto de los talleres */}
             <div className="rounded-2xl overflow-hidden shadow-xl border border-white/10 h-52 bg-black/20">
               <img src={capsula.fotoActividad} alt="Talleres de Socialización" className="w-full h-full object-cover" />
             </div>
-            {/* Comentarios expuestos */}
             <div className="space-y-2">
               {capsula.comentariosTaller?.map((comentario, i) => (
                 <div key={i} className="bg-white/10 backdrop-blur-sm border-l-4 border-[#a8e063] rounded-r-xl p-3 text-white/90 italic font-body text-sm">
@@ -219,16 +205,13 @@ export default function Capsula({ onContinuar, registrarVideoVisto }) {
           </div>
         )}
 
-        {/* Renderizado Condicional: DINÁMICA CÁPSULA 2 (Reproductor de Video) */}
         {capsula.videoId && (
           <VideoPlayer
             videoId={capsula.videoId}
             onTerminado={handleVideoTerminado}
-            registrar={handleVideoTerminado}
           />
         )}
 
-        {/* Stats dinámicas */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
           {capsula.stats.map((s, i) => (
             <div key={i} className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-4 text-center flex flex-col justify-center">
@@ -238,12 +221,10 @@ export default function Capsula({ onContinuar, registrarVideoVisto }) {
           ))}
         </div>
 
-        {/* Descripción */}
         <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-5 mb-6">
           <p className="font-body text-white/85 leading-relaxed text-sm sm:text-base">{capsula.descripcion}</p>
         </div>
 
-        {/* Botón continuar inteligente */}
         <button
           onClick={handleSiguiente}
           disabled={!videoListo}
