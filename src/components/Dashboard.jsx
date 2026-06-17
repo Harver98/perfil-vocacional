@@ -253,47 +253,50 @@ export default function Dashboard() {
 
   // Carga e indexación multidimensional de datos
   const cargarDatos = useCallback(async () => {
-    setCargando(true)
-    try {
-      const [
-        { data: participantes },
-        { data: progOrden },
-        { data: lineas },
-        { data: electivas },
-        { data: certificados },
-        { data: pIngreso },
-        { data: pEgreso },
-        { data: vLengua },
-        { data: vPrograma }
-      ] = await Promise.all([
-        supabase.from('participantes').select('*'),
-        supabase.from('programas_orden').select('*'),
-        supabase.from('lineas_investigacion').select('*'),
-        supabase.from('electivas').select('*'),
-        supabase.from('certificados').select('*'),
-        supabase.from('perfil_ingreso').select('*'),
-        supabase.from('perfil_egreso').select('*'),
-        supabase.from('vista_analisis_lengua').select('*').maybeSingle().then(res => res.data ? [res.data] : []),
-        supabase.from('vista_por_programa').select('*')
-      ])
+  setCargando(true)
+  try {
+    const [
+      { data: participantes },
+      { data: progOrden },
+      { data: lineas },
+      { data: electivas },
+      { data: certificados },
+      { data: pIngreso },
+      { data: pEgreso },
+      { data: vLengua },
+      { data: vPrograma },
+      { data: listaRespuestas } 
+    ] = await Promise.all([
+      supabase.from('participantes').select('*'),
+      supabase.from('programas_orden').select('*'),
+      supabase.from('lineas_investigacion').select('*'),
+      supabase.from('electivas').select('*'),
+      supabase.from('certificados').select('*'),
+      supabase.from('perfil_ingreso').select('*'),
+      supabase.from('perfil_egreso').select('*'),
+      supabase.from('vista_analisis_lengua').select('*'), 
+      supabase.from('vista_por_programa').select('*'),
+      supabase.from('respuestas').select('*') // <-- Traemos la tabla respuestas de Supabase
+    ])
 
-      setRawData({ 
-        participantes: participantes || [], 
-        progOrden: progOrden || [], 
-        lineas: lineas || [], 
-        electivas: electivas || [], 
-        certificados: certificados || [],
-        perfilIngreso: pIngreso || [],
-        perfilEgreso: pEgreso || [],
-        vistaLengua: vLengua || [],
-        vistaPrograma: vPrograma || []
-      })
-    } catch (err) {
-      console.error('Error estructurando fuentes del observatorio:', err)
-    } finally {
-      setCargando(false)
-    }
-  }, [])
+    setRawData({ 
+      participantes: participantes || [], 
+      progOrden: progOrden || [], 
+      lineas: lineas || [], 
+      electivas: electivas || [], 
+      certificados: certificados || [],
+      perfilIngreso: pIngreso || [],
+      perfilEgreso: pEgreso || [],
+      vistaLengua: vLengua || [],
+      vistaPrograma: vPrograma || [],
+      respuestasTabla: listaRespuestas || [] // <-- La guardamos en el estado general
+    })
+  } catch (err) {
+    console.error('Error estructurando fuentes del observatorio:', err)
+  } finally {
+    setCargando(false)
+  }
+}, [])
 
   useEffect(() => { if (autenticado) cargarDatos() }, [autenticado, cargarDatos])
 
@@ -456,52 +459,88 @@ export default function Dashboard() {
   }, [rawData.participantes])
 
   // Controladores de Limpieza Dinámica de Registros
+  // Reemplaza esta función dentro de tu Dashboard.jsx
   const eliminarRegistros = async (tipo) => {
     setEliminando(true); setMensajeElim(null)
     try {
-      const tablas = ['manifiesto','certificados','electivas','lineas_investigacion','perfil_egreso','perfil_ingreso','programas_orden','participantes']
+      // 1. Declaramos el orden estricto de las tablas relacionales para evitar fallos de llaves foráneas.
+      // Incluimos 'respuestas' en la lista de depuración.
+      const tablasRelacionales = [
+        'manifiesto',
+        'certificados',
+        'electivas',
+        'lineas_investigacion',
+        'perfil_egreso',
+        'perfil_ingreso',
+        'programas_orden',
+        'respuestas' // <-- Agregada para limpieza en Supabase
+      ]
+
       if (tipo === 'incompletos') {
+        // Buscar los IDs de participantes que no han terminado el formulario
         const { data: incom } = await supabase.from('participantes').select('id').eq('completado', false)
+        
         if (incom?.length) {
           const ids = incom.map(p => p.id)
-          for (const t of tablas.filter(t => t !== 'participantes')) {
+          
+          // Borrar de todas las subtablas donde la columna es 'participante_id'
+          for (const t of tablasRelacionales.filter(t => t !== 'respuestas')) {
             await supabase.from(t).delete().in('participante_id', ids)
           }
+          
+          // BORRADO EN SUPABASE PARA RESPUESTAS: Usamos 'sesion_id' porque así se llama la columna en esa tabla
+          await supabase.from('respuestas').delete().in('sesion_id', ids)
+          
+          // Por último, borramos la raíz en la tabla participantes
           await supabase.from('participantes').delete().eq('completado', false)
         }
-        setMensajeElim({ ok: true, texto: '✅ Registros incompletos depurados.' })
+        setMensajeElim({ ok: true, texto: '✅ Registros incompletos y sus respuestas fueron depurados de Supabase.' })
+      
       } else if (tipo === 'todo') {
-        for (const t of tablas) {
+        // Borrado absoluto: Vacía todo el repositorio histórico de Supabase en cascada
+        for (const t of tablasRelacionales.filter(t => t !== 'respuestas')) {
           await supabase.from(t).delete().neq('id', '00000000-0000-0000-0000-000000000000')
         }
-        setMensajeElim({ ok: true, texto: '✅ Base de datos del observatorio restablecida.' })
+        
+        // Vaciar por completo la tabla de respuestas en Supabase
+        await supabase.from('respuestas').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+        
+        // Vaciar la tabla raíz de participantes
+        await supabase.from('participantes').delete().neq('id', '00000000-0000-0000-0000-000000000000')
+        
+        setMensajeElim({ ok: true, texto: '✅ Base de datos del observatorio y respuestas restablecidas por completo.' })
       }
+      
+      // Recargar el estado del frontend con los cubos limpios de Supabase
       await cargarDatos()
     } catch (err) {
-      setMensajeElim({ ok: false, texto: '⚠️ Error: ' + err.message })
-    } { setEliminando(false); setModalEliminar(null) }
+      setMensajeElim({ ok: false, texto: '⚠️ Error al eliminar en Supabase: ' + err.message })
+    } finally {
+      setEliminando(false); setModalEliminar(null)
+    }
   }
 
   // ── Handlers de Exportación de Segmentos ────────────────────────────────────
     const procesarExportacionCSV = () => {
-    if (!datosFiltrados || !rawData.participantes) return
+  if (!datosFiltrados || !rawData.participantes) return
 
-    // Si estás en la pestaña de Participantes (o quieres exportar la sábana completa de datos)
-    // Generamos un archivo plano con absolutamente TODAS las columnas unificadas
     const sabanaDeDatosCompleta = rawData.participantes.map(p => {
-      // 1. Buscar correspondencias de este participante en las subtablas
       const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
       const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
       
       const lineasRep = rawData.lineas?.filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ') || ''
       const electivasRep = rawData.electivas?.filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ') || ''
       
-      const competenciasIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
-      const competenciasEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
+      const competenciesIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
+      const competenciesEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
       
       const certificadoCodigo = rawData.certificados?.find(c => c.participante_id === p.id)?.codigo_verificacion || 'No certificado'
 
-      // 2. Retornar un único objeto plano por persona con todo lo que respondió
+      // BUSQUEDA POR CONEXIÓN CORRECTA (p.id === r.sesion_id)
+      // Buscamos la fila en la tabla de respuestas donde sesion_id coincida con el id del participante
+      const respuestaFila = rawData.respuestasTabla?.find(r => r.sesion_id === p.id && r.importancia_lengua);
+      const respuestaLengua = respuestaFila ? respuestaFila.importancia_lengua : 'Sin responder';
+
       return {
         'ID Participante': p.id,
         'Nombre Completo': p.nombre || 'Anónimo',
@@ -511,19 +550,18 @@ export default function Dashboard() {
         'Tipo de Actor': ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
         '¿Completó Todo?': p.completado ? 'SÍ' : 'NO',
         '¿Participó Antes?': p.participo_antes ? 'SÍ' : 'NO',
-        'Importancia Lengua Barí': p.importancia_lengua || 'Sin responder', // Tu campo de la pregunta abierta/cerrada de lengua
+        'Importancia Lengua Barí e Idiomas': respuestaLengua, // <-- ¡Ahora sí traerá el texto real!
         'Programa Preferencia 1': PROG_LABEL[programa1] || programa1,
         'Programa Preferencia 2': PROG_LABEL[programa2] || programa2,
         'Líneas de Interés': lineasRep,
         'Electivas Seleccionadas': electivasRep,
-        'Competencias Perfil Ingreso': competenciasIngreso,
-        'Competencias Perfil Egreso': competenciasEgreso,
+        'Competencias Perfil Ingreso': competenciesIngreso,
+        'Competencias Perfil Egreso': competenciesEgreso,
         'Código Certificado': certificadoCodigo,
         'Fecha de Registro': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
       }
     })
 
-    // Descargar el archivo unificado
     return exportarCSV(sabanaDeDatosCompleta, 'observatorio_catatumbo_sabana_completa')
   }
 
