@@ -23,7 +23,6 @@ const PROG_LABEL = {
   trabajo_social: 'Trabajo Social',
   agronomia:      'Ing. Agronómica',
   administracion: 'Adm. Empresas',
-  agroindustrial: 'Ing. Agroindustrial'
 }
 const ACTOR_LABEL = {
   estudiante:   'Estudiante',
