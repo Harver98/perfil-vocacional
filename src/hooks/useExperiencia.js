@@ -144,7 +144,7 @@ export function useExperiencia() {
           participante_id:  estado.participanteId,
           programa:         datos.programa,
           competencia:      p.competencia,
-          categoria:        p.categoria || 'general',
+          categoria:        p.categoria || 'g',
           orden_prioridad:  p.orden,
           comentario_libre: datos.comentario || null,
           vision_territorial: datos.visionTerritorial || null,
@@ -168,7 +168,6 @@ export function useExperiencia() {
           programa:         datos.programa,
           competencia:      p.competencia,
           orden_prioridad:  p.orden,
-          categoria:        p.categoria || 'general',
           comentario_libre: datos.comentario || null,
         }))
         if (rows.length) await supabase.from('perfil_egreso').insert(rows)
