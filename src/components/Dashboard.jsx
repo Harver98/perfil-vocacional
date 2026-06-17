@@ -319,8 +319,10 @@ export default function Dashboard() {
       if (filtroActor && p.tipo_actor !== filtroActor) return false
       if (filtroCompletado && !p.completado) return false
       
+      // ✅ CORRECCIÓN EDAD: Calibración matemática de rangos de edad enteros
       if (filtroEdad) {
-        const e = parseInt(p.edad)
+        const e = parseInt(p.edad, 10)
+        if (isNaN(e)) return false // Si no hay edad registrada, se descarta si hay filtro activo
         if (filtroEdad === '< 18' && e >= 18) return false
         if (filtroEdad === '18-25' && (e < 18 || e > 25)) return false
         if (filtroEdad === '26-35' && (e < 26 || e > 35)) return false
@@ -328,8 +330,11 @@ export default function Dashboard() {
         if (filtroEdad === '46+' && e <= 45) return false
       }
 
+      // ✅ CORRECCIÓN PROGRAMA: Busca coincidencia en cualquier orden de preferencia (1 o 2)
       if (filtroPrograma) {
-        const tieneProg = rawData.progOrden?.some(po => po.participante_id === p.id && po.programa === filtroPrograma && po.orden === 1)
+        const tieneProg = rawData.progOrden?.some(
+          po => po.participante_id === p.id && po.programa === filtroPrograma
+        )
         if (!tieneProg) return false
       }
       return true
@@ -359,7 +364,7 @@ export default function Dashboard() {
     partFiltrados.forEach(p => {
       porMunicipio[p.municipio] = (porMunicipio[p.municipio] || 0) + 1
       porActor[p.tipo_actor] = (porActor[p.tipo_actor] || 0) + 1
-      const e = parseInt(p.edad)
+      const e = parseInt(p.edad, 10)
       if (!isNaN(e)) { sumaEdad += e; cuentaEdad++ }
       
       if (e < 18) porEdad['< 18']++
@@ -401,7 +406,7 @@ export default function Dashboard() {
       progPref[p.programa] = (progPref[p.programa] || 0) + 1
     })
 
-    // ── PROCESAMIENTO PESTAÑA ÁNALISIS (Competencias SER, HACER, SABER) ──
+    // ── PROCESAMIENTO PESTAÑA ÁNALISIS
     const agruparCompetencias = (coleccion) => {
       const conteo = {}
       coleccion.forEach(c => {
@@ -418,14 +423,20 @@ export default function Dashboard() {
     const competenciasIngreso = agruparCompetencias(ingFiltrados)
     const competenciasEgreso = agruparCompetencias(egFiltrados)
 
-    // Desglose de Lengua Barí (Mapeo desde variables crudas / vistas SQL)
-    const mockLengua = [
-      { name: 'Muy importante', value: total ? Math.round(total * 0.45) : 0 },
-      { name: 'Importante', value: total ? Math.round(total * 0.30) : 0 },
-      { name: 'Medianamente importante', value: total ? Math.round(total * 0.15) : 0 },
-      { name: 'Poco importante', value: total ? Math.round(total * 0.08) : 0 },
-      { name: 'Nada importante', value: total ? Math.round(total * 0.02) : 0 }
-    ]
+    // Desglose dinámico de Lengua Barí basado en las respuestas reales filtradas
+    const respuestasLenguaFiltradas = (rawData.respuestasTabla || []).filter(
+      r => targetIds.has(r.sesion_id) && r.importancia_lengua
+    )
+    const conteoLengua = {}
+    respuestasLenguaFiltradas.forEach(r => {
+      conteoLengua[r.importancia_lengua] = (conteoLengua[r.importancia_lengua] || 0) + 1
+    })
+
+    const opcionesMock = ['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante']
+    const analisisLengua = opcionesMock.map(op => ({
+      name: op,
+      value: conteoLengua[op] || 0
+    }))
 
     return {
       total,
@@ -445,7 +456,7 @@ export default function Dashboard() {
       progPref: Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
       competenciasIngreso,
       competenciasEgreso,
-      analisisLengua: rawData.vistaLengua?.length ? rawData.vistaLengua : mockLengua,
+      analisisLengua,
       vistaPrograma: rawData.vistaPrograma || []
     }
   }, [rawData, filtroMunicipio, filtroPrograma, filtroActor, filtroEdad, filtroCompletado])
