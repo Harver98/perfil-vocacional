@@ -31,8 +31,8 @@ const CAPSULAS = [
     emoji: '🎓',
     stats: [
       { valor: '🤝', label: 'Trabajo Social' },
-      { valor: '🌱', label: 'Ing. Agronómica' },
-      { valor: '📈', label: 'Adm. Empresas' },
+      { valor: '🌱', label: 'Ingeniería Agronómica' },
+      { valor: '📈', label: 'Administración de Empresas' },
     ],
   },
 ]
