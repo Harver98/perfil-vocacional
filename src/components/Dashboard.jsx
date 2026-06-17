@@ -461,15 +461,8 @@ export default function Dashboard() {
       const compEgreso    = (rawData.perfilEgreso  || []).filter(e => e.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
       const certFila      = (rawData.certificados  || []).find(c => c.participante_id === p.id)
       const certificado   = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
-
-      // importancia_lengua puede ser 'null' como string según Supabase
-      /*const respLengua = (rawData.respuestasTabla || []).find(
-        r => r.sesion_id === p.id &&
-             r.importancia_lengua &&
-             String(r.importancia_lengua).trim() !== '' &&
-             String(r.importancia_lengua).trim().toLowerCase() !== 'null'
-      )*/
-
+      const visionIngreso = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial) ?.vision_territorial || ''
+      
       return {
         'ID Participante':                    p.id,
         'Nombre Completo':                    p.nombre              || 'Anónimo',
@@ -497,6 +490,7 @@ export default function Dashboard() {
         'Competencias Perfil Egreso':         compEgreso,
         'Código Certificado':                 certificado,
         'Fecha de Registro':                  p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
+        'Visión Territorial del programa':    visionIngreso,
       }
     })
 

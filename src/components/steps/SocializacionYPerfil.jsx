@@ -219,7 +219,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
       ...priIngresoSaber.map((c, i) => ({ categoria: 'saber', competencia: c, orden: i + 1 })),
     ]
     try {
-      await onGuardarIngreso({ programa: programaId, prioridades, comentario: comIngreso })
+      await onGuardarIngreso({ programa: programaId, prioridades, comentario: comIngreso, vision_territorial: imaginaPrograma })
       ir(2)
     } catch (e) {
       setErrorMsg('Error al guardar perfil de ingreso. Intenta de nuevo.')
