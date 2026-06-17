@@ -460,11 +460,8 @@ export default function Dashboard() {
       electivasTop,
       progPref: Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
       
-      // Doble mapeo por compatibilidad con el JSX
       competenciasIngreso,
       competenciasEgreso,
-      competenciesIngreso,
-      competenciesEgreso,
       
       analisisLengua,
       vistaPrograma: rawData.vistaPrograma || []
