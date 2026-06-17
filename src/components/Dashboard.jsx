@@ -35,16 +35,24 @@ const ACTOR_LABEL = {
 // ── Utilidades de exportación ─────────────────────────────────────────────────
 const exportarCSV = (datos, nombreArchivo) => {
   if (!datos?.length) return
+  
+  // Extrae los encabezados bonitos en español que definimos arriba
   const headers = Object.keys(datos[0]).join(',')
-  const filas   = datos.map(fila =>
-    Object.values(fila).map(v =>
-      typeof v === 'string' && v.includes(',') ? `"${v}"` : v ?? ''
-    ).join(',')
+  
+  const filas = datos.map(fila =>
+    Object.values(fila).map(v => {
+      if (v === null || v === undefined) return '';
+      // Si la respuesta tiene comas, comillas o saltos de línea, la encerramos en comillas dobles y limpiamos
+      let texto = String(v).replace(/"/g, '""'); 
+      return texto.includes(',') || texto.includes('\n') || texto.includes('\r') ? `"${texto}"` : texto;
+    }).join(',')
   )
-  const csv  = [headers, ...filas].join('\n')
+  
+  const csv = [headers, ...filas].join('\n')
+  // El caracter \uFEFF fuerza a Excel a abrir el archivo detectando correctamente las tildes y eñes (UTF-8)
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url  = URL.createObjectURL(blob)
-  const a    = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
   a.href = url; a.download = `${nombreArchivo}.csv`; a.click()
   URL.revokeObjectURL(url)
 }
@@ -475,16 +483,48 @@ export default function Dashboard() {
   }
 
   // ── Handlers de Exportación de Segmentos ────────────────────────────────────
-  const procesarExportacionCSV = () => {
-    if (!datosFiltrados) return
-    switch (vista) {
-      case 0: return exportarCSV(datosFiltrados.municipioDetalle, 'observatorio_resumen')
-      case 1: return exportarCSV(datosFiltrados.municipioDetalle, 'observatorio_territorio')
-      case 2: return exportarCSV(datosFiltrados.lineasTop, 'observatorio_lineas_investigacion')
-      case 3: return exportarCSV(rawData.participantes, 'observatorio_padron_participantes')
-      case 5: return exportarCSV(datosFiltrados.competenciasIngreso, 'observatorio_analisis_competencias')
-      default: return exportarCSV(rawData.participantes, 'observatorio_datos_catatumbo')
-    }
+    const procesarExportacionCSV = () => {
+    if (!datosFiltrados || !rawData.participantes) return
+
+    // Si estás en la pestaña de Participantes (o quieres exportar la sábana completa de datos)
+    // Generamos un archivo plano con absolutamente TODAS las columnas unificadas
+    const sabanaDeDatosCompleta = rawData.participantes.map(p => {
+      // 1. Buscar correspondencias de este participante en las subtablas
+      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+      const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
+      
+      const lineasRep = rawData.lineas?.filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ') || ''
+      const electivasRep = rawData.electivas?.filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ') || ''
+      
+      const competenciasIngreso = rawData.perfilIngreso?.filter(i => i.participante_id === p.id).map(i => i.competencia).join(' | ') || ''
+      const competenciasEgreso = rawData.perfilEgreso?.filter(eg => eg.participante_id === p.id).map(eg => eg.competencia).join(' | ') || ''
+      
+      const certificadoCodigo = rawData.certificados?.find(c => c.participante_id === p.id)?.codigo_verificacion || 'No certificado'
+
+      // 2. Retornar un único objeto plano por persona con todo lo que respondió
+      return {
+        'ID Participante': p.id,
+        'Nombre Completo': p.nombre || 'Anónimo',
+        'Municipio': p.municipio || '',
+        'Zona (Vereda/Corregimiento)': p.vereda || p.corregimiento || 'Urbana',
+        'Edad': p.edad || '',
+        'Tipo de Actor': ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+        '¿Completó Todo?': p.completado ? 'SÍ' : 'NO',
+        '¿Participó Antes?': p.participo_antes ? 'SÍ' : 'NO',
+        'Importancia Lengua Barí': p.importancia_lengua || 'Sin responder', // Tu campo de la pregunta abierta/cerrada de lengua
+        'Programa Preferencia 1': PROG_LABEL[programa1] || programa1,
+        'Programa Preferencia 2': PROG_LABEL[programa2] || programa2,
+        'Líneas de Interés': lineasRep,
+        'Electivas Seleccionadas': electivasRep,
+        'Competencias Perfil Ingreso': competenciasIngreso,
+        'Competencias Perfil Egreso': competenciasEgreso,
+        'Código Certificado': certificadoCodigo,
+        'Fecha de Registro': p.created_at ? new Date(p.created_at).toLocaleDateString() : ''
+      }
+    })
+
+    // Descargar el archivo unificado
+    return exportarCSV(sabanaDeDatosCompleta, 'observatorio_catatumbo_sabana_completa')
   }
 
   if (!autenticado) return <LoginUIS onLogin={n => { setNombreAdmin(n); setAutenticado(true) }} />
