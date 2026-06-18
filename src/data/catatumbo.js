@@ -40,7 +40,7 @@ export const TIPOS_ACTOR = [
     id: 'organizacion',
     label: 'Organización',
     emoji: '🤝',
-    descripcion: 'Integrante de una “organización pública o privada.  Miembro de la comunidad Barí.',
+    descripcion: 'Integrante de una organización pública o privada, o Miembro de la comunidad Barí.',
     color: '#c96a00',
     bg: 'linear-gradient(135deg, #c96a00, #f97316)',
   },

@@ -20,7 +20,6 @@ export default function Caracterizacion({ onContinuar, guardando, error }) {
   const [corregimiento,  setCorregimiento]  = useState('')
   const [vereda,         setVereda]         = useState('')
   const [tipoActor,      setTipoActor]      = useState('')
-
   const [edad,           setEdad]           = useState('')
   const [colegio,        setColegio]        = useState('')
   const [grado,          setGrado]          = useState('')
@@ -74,103 +73,104 @@ export default function Caracterizacion({ onContinuar, guardando, error }) {
       </button>
     </div>,
 
-    // 1 — Municipio: Versión Premium Profesional Rediseñada
+    // 1 — Municipio con mapa de fondo y recuadro blanco
     <div key={1} className="fixed inset-0 overflow-y-auto" style={{ zIndex: 10 }}>
 
-      {/* MAPA fondo fijo con mejores filtros de contraste */}
+      {/* Mapa fondo fijo */}
       <div className="fixed inset-0">
         <img src="/mapa.jpeg" alt="" aria-hidden="true"
           className="w-full h-full object-cover object-center"
-          style={{ filter: 'saturate(1.1) brightness(0.4) contrast(1.15)' }} />
-        {/* Capa base oscura para eliminar el exceso de verde de fondo y mejorar legibilidad */}
-        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(15,23,42,0.6) 0%, rgba(15,23,42,0.75) 50%, rgba(15,23,42,0.9) 100%)' }} />
-        {/* Resplandor radial verde muy sutil en la esquina superior */}
-        <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 20%, rgba(103,185,62,0.12) 0%, transparent 60%)' }} />
+          style={{ filter: 'saturate(1.2) brightness(0.55) contrast(1.1)' }} />
+        <div className="absolute inset-0" style={{ background: 'rgba(10,20,10,0.45)' }} />
       </div>
 
-      {/* Contenido scrolleable encima */}
-      <div className="relative z-10 flex flex-col justify-center min-h-screen px-5 py-12">
-        <div className="w-full max-w-md mx-auto space-y-6">
+      {/* Contenido scrolleable */}
+      <div className="relative z-10 flex flex-col justify-center min-h-screen px-4 py-10">
+        <div className="w-full max-w-md mx-auto">
 
-          {/* Encabezado Estilizado */}
-          <div className="text-center md:text-left mb-2">
-            <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full border border-white/10"
-              style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(4px)' }}>
+          {/* Badge territorial fuera del recuadro */}
+          <div className="flex justify-center mb-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(0,0,0,0.45)', border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)' }}>
               <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-[10px] font-bold uppercase tracking-widest text-white/80">Región del Catatumbo</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-white/80">Región del Catatumbo</span>
             </div>
-            <h2 className="font-display text-3xl font-black text-white leading-tight mb-1">
-              Hola, <span className="text-green-400">{nombre}</span>
-            </h2>
-            <p className="text-white/60 font-body text-sm">Selecciona tu municipio de origen</p>
           </div>
 
-          {/* Grid de municipios — Glassmorphism Oscuro de Alto Contraste */}
-          <div className="grid grid-cols-2 gap-2.5">
-            {MUNICIPIOS_CATATUMBO.map(m => (
-              <button key={m} onClick={() => setMunicipio(m)}
-                className="py-3.5 px-4 rounded-xl font-display font-medium text-sm transition-all duration-200 text-left hover:scale-[1.02] active:scale-95 shadow-sm"
-                style={municipio === m
-                  ? { background: '#67B93E', border: '1px solid #a8e063', color: 'white', boxShadow: '0 8px 20px rgba(103,185,62,0.4)' }
-                  : { background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(12px)' }}>
-                <div className="flex items-center justify-between w-full">
-                  <span>{m}</span>
-                  {municipio === m && <span className="text-white text-xs">✓</span>}
-                </div>
+          {/* RECUADRO BLANCO principal */}
+          <div className="rounded-3xl shadow-2xl overflow-hidden"
+            style={{ background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(20px)' }}>
+
+            {/* Header verde dentro del recuadro */}
+            <div className="px-6 pt-6 pb-4" style={{ background: 'linear-gradient(135deg, #3d7820, #67B93E)' }}>
+              <h2 className="font-display text-2xl font-black text-white leading-tight">
+                Hola, <span style={{ color: '#d4f5a0' }}>{nombre}</span> 👋
+              </h2>
+              <p className="text-white/75 font-body text-sm mt-1">Selecciona tu municipio de origen</p>
+            </div>
+
+            <div className="px-5 py-5 space-y-5">
+
+              {/* Grid municipios */}
+              <div className="grid grid-cols-2 gap-2">
+                {MUNICIPIOS_CATATUMBO.map(m => (
+                  <button key={m} onClick={() => setMunicipio(m)}
+                    className="py-3 px-3 rounded-xl font-display font-semibold text-sm transition-all duration-200 text-left hover:scale-[1.02] active:scale-95"
+                    style={municipio === m
+                      ? { background: '#67B93E', border: '2px solid #3d7820', color: 'white', boxShadow: '0 4px 12px rgba(103,185,62,0.35)' }
+                      : { background: '#f8fafb', border: '1.5px solid #e5e7eb', color: '#374151' }}>
+                    <div className="flex items-center justify-between">
+                      <span>{m}</span>
+                      {municipio === m && <span className="text-white text-xs font-bold">✓</span>}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {/* Separador */}
+              <div className="flex items-center gap-3">
+                <div className="flex-1 h-px bg-gray-200" />
+                <span className="text-gray-400 text-xs font-semibold uppercase tracking-widest">Ubicación Específica</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+
+              {/* Corregimiento */}
+              <div>
+                <label className="block font-display font-bold text-gray-500 text-xs mb-1.5 uppercase tracking-wider">
+                  Corregimiento <span className="text-gray-300 font-normal">(Opcional)</span>
+                </label>
+                <input type="text" value={corregimiento} onChange={e => setCorregimiento(e.target.value)}
+                  placeholder="Ej: Las Mercedes"
+                  className="w-full rounded-xl px-4 py-3 font-body text-sm text-gray-800 focus:outline-none transition-all"
+                  style={{ background: '#f8fafb', border: '1.5px solid #e5e7eb' }}
+                  onFocus={e => (e.target.style.borderColor = '#67B93E')}
+                  onBlur={e => (e.target.style.borderColor = '#e5e7eb')} />
+              </div>
+
+              {/* Vereda */}
+              <div>
+                <label className="block font-display font-bold text-gray-500 text-xs mb-1.5 uppercase tracking-wider">
+                  Vereda <span className="text-gray-300 font-normal">(Opcional)</span>
+                </label>
+                <input type="text" value={vereda} onChange={e => setVereda(e.target.value)}
+                  placeholder="Nombre de la vereda..."
+                  className="w-full rounded-xl px-4 py-3 font-body text-sm text-gray-800 focus:outline-none transition-all"
+                  style={{ background: '#f8fafb', border: '1.5px solid #e5e7eb' }}
+                  onFocus={e => (e.target.style.borderColor = '#67B93E')}
+                  onBlur={e => (e.target.style.borderColor = '#e5e7eb')} />
+              </div>
+
+              {/* Botón */}
+              <button onClick={irSiguiente} disabled={!municipio}
+                className="w-full py-4 rounded-2xl font-display font-bold text-base text-white transition-all"
+                style={municipio
+                  ? { background: 'linear-gradient(135deg, #67B93E, #3d7820)', boxShadow: '0 6px 20px rgba(103,185,62,0.35)' }
+                  : { background: '#e5e7eb', color: '#9ca3af', cursor: 'not-allowed' }}>
+                Siguiente Paso →
               </button>
-            ))}
-          </div>
 
-          {/* Separador UI */}
-          <div className="flex items-center gap-3 py-2">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/40 text-xs font-semibold uppercase tracking-widest">Ubicación Específica</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          {/* Inputs Opcionales con diseño integrado en el Cristal */}
-          <div className="space-y-4">
-            <div>
-              <label className="block font-display font-bold text-white/60 text-xs mb-1.5 uppercase tracking-wider">Corregimiento <span className="text-white/30 font-normal">(Opcional)</span></label>
-              <input type="text" value={corregimiento} onChange={e => setCorregimiento(e.target.value)}
-                placeholder="Ej: Las Mercedes"
-                className="w-full rounded-xl px-4 py-3 font-body text-sm focus:outline-none transition-all placeholder:text-white/30"
-                style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', backdropFilter: 'blur(12px)' }}
-                onFocus={e => {
-                  e.target.style.borderColor = '#67B93E';
-                  e.target.style.background = 'rgba(30, 41, 59, 0.6)';
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = 'rgba(255,255,255,0.08)';
-                  e.target.style.background = 'rgba(30, 41, 59, 0.45)';
-                }} />
-            </div>
-
-            <div>
-              <label className="block font-display font-bold text-white/60 text-xs mb-1.5 uppercase tracking-wider">Vereda <span className="text-white/30 font-normal">(Opcional)</span></label>
-              <input type="text" value={vereda} onChange={e => setVereda(e.target.value)}
-                placeholder="Nombre de la vereda..."
-                className="w-full rounded-xl px-4 py-3 font-body text-sm focus:outline-none transition-all placeholder:text-white/30"
-                style={{ background: 'rgba(30, 41, 59, 0.45)', border: '1px solid rgba(255,255,255,0.08)', color: 'white', backdropFilter: 'blur(12px)' }}
-                onFocus={e => {
-                  e.target.style.borderColor = '#67B93E';
-                  e.target.style.background = 'rgba(30, 41, 59, 0.6)';
-                }}
-                onBlur={e => {
-                  e.target.style.borderColor = 'rgba(255,255,255,0.08)';
-                  e.target.style.background = 'rgba(30, 41, 59, 0.45)';
-                }} />
             </div>
           </div>
-
-          {/* Botón de acción principal con gradiente fino */}
-          <button onClick={irSiguiente} disabled={!municipio}
-            className="w-full py-4 rounded-xl font-display font-bold text-base text-white transition-all mt-4 uppercase tracking-wider shadow-lg hover:brightness-110 active:scale-[0.99]"
-            style={municipio
-              ? { background: 'linear-gradient(135deg, #67B93E, #4d912c)', boxShadow: '0 6px 20px rgba(103,185,62,0.35)' }
-              : { background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.25)', cursor: 'not-allowed' }}>
-            Siguiente Paso →
-          </button>
         </div>
       </div>
     </div>,
@@ -213,11 +213,15 @@ export default function Caracterizacion({ onContinuar, guardando, error }) {
       </div>
 
       <Campo label="Edad">
-        <input type="number" min="10" max="90" value={edad} onChange={e => setEdad(e.target.value)}
+        <input type="number" min="15" max="99" value={edad} onChange={e => setEdad(e.target.value)}
           placeholder="Tu edad..." className={INPUT_CLASS}
           onFocus={e => (e.target.style.borderColor = '#67B93E')}
           onBlur={e => (e.target.style.borderColor = '#e5e7eb')} />
       </Campo>
+
+      {edad && (parseInt(edad) < 15 || parseInt(edad) > 99) && (
+        <p className="text-red-500 text-xs font-semibold">⚠️ La edad debe estar entre 15 y 99 años.</p>
+      )}
 
       {tipoActor === 'estudiante' && <>
         <Campo label="Colegio">
@@ -308,12 +312,6 @@ export default function Caracterizacion({ onContinuar, guardando, error }) {
         </div>
       </Campo>
 
-      {edad && (parseInt(edad) < 15 || parseInt(edad) > 99) && (
-        <p className="text-red-500 text-xs font-semibold -mt-3">
-          ⚠️ La edad debe estar entre 15 y 99 años.
-        </p>
-      )}
-
       {edad && participoAntes === null && (
         <p className="text-amber-600 text-xs font-semibold text-center">
           ⚠️ Por favor responde si has participado antes para continuar.
@@ -342,9 +340,7 @@ export default function Caracterizacion({ onContinuar, guardando, error }) {
     </div>,
   ]
 
-  if (subpaso === 1) {
-    return SUBPASOS[1]
-  }
+  if (subpaso === 1) return SUBPASOS[1]
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">

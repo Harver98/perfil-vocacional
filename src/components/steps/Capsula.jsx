@@ -4,7 +4,7 @@ const CAPSULAS = [
   {
     id: 'por_que',
     titulo: '¿Por qué una oferta académica para el Catatumbo?',
-    descripcion: 'La voz de la comunidad, profesores y estudiantes escuchadas en El Tarra, El Carmen, Hacarí, San Calixto, Hacarí, Convención, Teorama, Tibú y Sardinata, identificó que la educación superior es una herramienta para generar oportunidades y cerrar brechas de desarrollo en el territorio.',
+    descripcion: 'La voz de la comunidad, profesores y estudiantes escuchadas en El Tarra, El Carmen, Hacarí, San Calixto, Convención, Teorama, Tibú y Sardinata, identificó que la educación superior es una herramienta para generar oportunidades y cerrar brechas de desarrollo en el territorio.',
     videoId: null,
     color: 'linear-gradient(160deg, rgb(22,101,52) 0%, rgb(34,139,34) 60%, rgb(16,185,129) 100%)',
     emoji: '🌿',

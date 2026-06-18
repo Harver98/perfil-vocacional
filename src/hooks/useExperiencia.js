@@ -54,58 +54,24 @@ export function useExperiencia() {
 
   const guardarCaracterizacion = useCallback(async (datos) => {
     actualizar({ guardando: true, error: null })
-
     if (!supabaseConfigurado) {
-      actualizar({
-        participanteId: demoId(),
-        nombre:         datos.nombre,
-        municipio:      datos.municipio,
-        corregimiento:  datos.corregimiento,
-        vereda:         datos.vereda,
-        tipoActor:      datos.tipoActor,
-        datosActor:     datos.datosActor,
-        guardando:      false,
-        paso:           PASOS.PROGRAMAS_ORDEN,
-      })
+      actualizar({ participanteId: demoId(), nombre: datos.nombre, municipio: datos.municipio, corregimiento: datos.corregimiento, vereda: datos.vereda, tipoActor: datos.tipoActor, datosActor: datos.datosActor, guardando: false, paso: PASOS.PROGRAMAS_ORDEN })
       return
     }
-
     try {
-      const { data, error } = await supabase
-        .from('participantes')
-        .insert({
-          nombre:          datos.nombre,
-          municipio:       datos.municipio,
-          corregimiento:   datos.corregimiento || null,
-          vereda:          datos.vereda || null,
-          tipo_actor:      datos.tipoActor,
-          edad:            datos.datosActor.edad ? parseInt(datos.datosActor.edad) : null,
-          colegio:         datos.datosActor.colegio || null,
-          grado:           datos.datosActor.grado || null,
-          institucion:     datos.datosActor.institucion || null,
-          area:            datos.datosActor.area || null,
-          nivel_educativo: datos.datosActor.nivel_educativo || null,
-          organizacion:    datos.datosActor.organizacion || null,
-          correo:          datos.datosActor.correo || null,
-          participo_antes: datos.datosActor.participo_antes ?? null,
-          completado:      false,
-        })
-        .select('id')
-        .single()
-
+      const { data, error } = await supabase.from('participantes').insert({
+        nombre: datos.nombre, municipio: datos.municipio,
+        corregimiento: datos.corregimiento || null, vereda: datos.vereda || null,
+        tipo_actor: datos.tipoActor,
+        edad: datos.datosActor.edad ? parseInt(datos.datosActor.edad) : null,
+        colegio: datos.datosActor.colegio || null, grado: datos.datosActor.grado || null,
+        institucion: datos.datosActor.institucion || null, area: datos.datosActor.area || null,
+        nivel_educativo: datos.datosActor.nivel_educativo || null,
+        organizacion: datos.datosActor.organizacion || null, correo: datos.datosActor.correo || null,
+        participo_antes: datos.datosActor.participo_antes ?? null, completado: false,
+      }).select('id').single()
       if (error) throw error
-
-      actualizar({
-        participanteId: data.id,
-        nombre:         datos.nombre,
-        municipio:      datos.municipio,
-        corregimiento:  datos.corregimiento,
-        vereda:         datos.vereda,
-        tipoActor:      datos.tipoActor,
-        datosActor:     datos.datosActor,
-        guardando:      false,
-        paso:           PASOS.PROGRAMAS_ORDEN,
-      })
+      actualizar({ participanteId: data.id, nombre: datos.nombre, municipio: datos.municipio, corregimiento: datos.corregimiento, vereda: datos.vereda, tipoActor: datos.tipoActor, datosActor: datos.datosActor, guardando: false, paso: PASOS.PROGRAMAS_ORDEN })
     } catch (err) {
       console.error(err)
       actualizar({ guardando: false, error: 'Error al guardar. Verifica tu conexión.' })
@@ -114,156 +80,145 @@ export function useExperiencia() {
 
   const guardarProgramasOrden = useCallback(async (orden) => {
     actualizar({ programasOrden: orden, guardando: true })
-
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
-        const rows = orden.map((prog, i) => ({
-          participante_id: estado.participanteId,
-          programa:        prog,
-          orden:           i + 1,
-        }))
+        const rows = orden.map((prog, i) => ({ participante_id: estado.participanteId, programa: prog, orden: i + 1 }))
         await supabase.from('programas_orden').insert(rows)
       } catch (err) { console.warn(err) }
     }
-
-    actualizar({
-      guardando:      false,
-      programaActual: orden[0],
-      paso:           PASOS.SOCIALIZACION,
-    })
+    actualizar({ guardando: false, programaActual: orden[0], paso: PASOS.SOCIALIZACION })
   }, [estado.participanteId, actualizar])
 
   const guardarPerfilIngreso = useCallback(async (datos) => {
     actualizar({ guardando: true })
-
     const nuevo = { ...estado.perfilIngreso, [datos.programa]: datos }
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
         const rows = datos.prioridades.map(p => ({
-          participante_id:  estado.participanteId,
-          programa:         datos.programa,
-          competencia:      p.competencia,
-          categoria:        p.categoria || 'g',
-          orden_prioridad:  p.orden,
-          comentario_libre: datos.comentario || null,
+          participante_id: estado.participanteId, programa: datos.programa,
+          categoria: p.categoria || null, competencia: p.competencia,
+          orden_prioridad: p.orden, comentario_libre: datos.comentario || null,
           vision_territorial: datos.visionTerritorial || null,
         }))
         if (rows.length) await supabase.from('perfil_ingreso').insert(rows)
       } catch (err) { console.warn(err) }
     }
-
     actualizar({ perfilIngreso: nuevo, guardando: false, paso: PASOS.PERFIL_EGRESO })
   }, [estado.participanteId, estado.perfilIngreso, actualizar])
 
-  // ── CORRECCIÓN PRINCIPAL: importancia_lengua se guarda en tabla 'respuestas' ──
-  const guardarPerfilEgreso = useCallback(async (datos) => {
-    actualizar({ guardando: true })
-
-    const nuevo = { ...estado.perfilEgreso, [datos.programa]: datos }
-    if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
-      try {
-        const rows = datos.prioridades.map(p => ({
-          participante_id:  estado.participanteId,
-          programa:         datos.programa,
-          competencia:      p.competencia,
-          orden_prioridad:  p.orden,
+const guardarPerfilEgreso = useCallback(async (datos) => {
+  actualizar({ guardando: true })
+  const nuevo = {
+    ...estado.perfilEgreso,
+    [datos.programa]: datos
+  }
+  if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
+    try {
+      let rows = []
+      if (datos.prioridades && datos.prioridades.length > 0) {
+        rows = datos.prioridades.map(p => ({
+          participante_id: estado.participanteId,
+          programa: datos.programa,
+          competencia: p.competencia,
+          orden_prioridad: p.orden,
           comentario_libre: datos.comentario || null,
         }))
-        if (rows.length) await supabase.from('perfil_egreso').insert(rows)
+      } else {
+          rows = [{
+            participante_id: estado.participanteId,
+            programa: datos.programa,
+            competencia: 'Rasgo especial del profesional',
+            orden_prioridad: 1,
+            comentario_libre: datos.comentario || null,
+          }]
+        }
+      const { data, error } = await supabase
+        .from('perfil_egreso')
+        .insert(rows)
 
-        // datos.importancia_lengua viene de SocializacionYPerfil → handleGuardarLenguas
-        if (datos.importancia_lengua) {
-            await supabase
-              .from('participantes')
-              .update({ importancia_lengua: datos.importancia_lengua })
-              .eq('id', estado.participanteId)
-          }
-      } catch (err) { console.warn('Error guardando egreso:', err) }
+      if (error) {
+        console.error('ERROR PERFIL EGRESO:', error)
+      } else {
+        console.log('GUARDADO PERFIL EGRESO:', data)
+      }
+      console.log('DATA:', data)
+      console.log('ERROR:', error)
+      // Guardar datos cultura Barí
+      const updateData = {}
+      if (datos.importancia_lengua)
+        updateData.importancia_lengua = datos.importancia_lengua
+      if (datos.conocimiento_bari !== undefined)
+        updateData.conocimiento_bari = datos.conocimiento_bari
+      if (datos.desea_conocer_bari !== undefined)
+        updateData.desea_conocer_bari = datos.desea_conocer_bari
+      if (datos.como_conocer_bari !== undefined)
+        updateData.como_conocer_bari = datos.como_conocer_bari || null
+      if (Object.keys(updateData).length) {
+        await supabase
+          .from('participantes')
+          .update(updateData)
+          .eq('id', estado.participanteId)
+      }
+    } catch (err) {
+      console.warn('Error guardando egreso:', err)
     }
+  }
 
-    actualizar({ perfilEgreso: nuevo, guardando: false, paso: PASOS.LINEAS_INVESTIGACION })
-  }, [estado.participanteId, estado.perfilEgreso, actualizar])
+  actualizar({
+    perfilEgreso: nuevo,
+    guardando: false,
+    paso: PASOS.LINEAS_INVESTIGACION
+  })
+
+}, [estado.participanteId, estado.perfilEgreso, actualizar])
 
   const guardarLineas = useCallback(async (lineasSeleccionadas) => {
     actualizar({ guardando: true })
-
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
-        const rows = lineasSeleccionadas.map(l => ({
-          participante_id: estado.participanteId,
-          programa:        estado.programaActual,
-          linea:           l,
-        }))
+        const rows = lineasSeleccionadas.map(l => ({ participante_id: estado.participanteId, programa: estado.programaActual, linea: l }))
         if (rows.length) await supabase.from('lineas_investigacion').insert(rows)
       } catch (err) { console.warn(err) }
     }
-
     actualizar({ lineas: lineasSeleccionadas, guardando: false, paso: PASOS.ELECTIVAS })
   }, [estado.participanteId, estado.programaActual, actualizar])
 
   const guardarElectivas = useCallback(async (electivasSeleccionadas) => {
     actualizar({ guardando: true })
-
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
-        const rows = electivasSeleccionadas.map(e => ({
-          participante_id: estado.participanteId,
-          programa:        estado.programaActual,
-          electiva:        e,
-        }))
+        const rows = electivasSeleccionadas.map(e => ({ participante_id: estado.participanteId, programa: estado.programaActual, electiva: e }))
         if (rows.length) await supabase.from('electivas').insert(rows)
       } catch (err) { console.warn(err) }
     }
-
     actualizar({ electivas: electivasSeleccionadas, guardando: false, paso: PASOS.EMPLEABILIDAD })
   }, [estado.participanteId, estado.programaActual, actualizar])
 
   const guardarManifiesto = useCallback(async (datos) => {
     actualizar({ guardando: true, error: null })
-
     const codigo = 'CAT-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).slice(2,6).toUpperCase()
-
     if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
       try {
         await supabase.from('manifiesto').insert({
-          participante_id:   estado.participanteId,
-          empleabilidad_ts:  datos.empleabilidad?.trabajo_social || null,
-          empleabilidad_ia:  datos.empleabilidad?.agronomia || null,
+          participante_id: estado.participanteId,
+          empleabilidad_ts: datos.empleabilidad?.trabajo_social || null,
+          empleabilidad_ia: datos.empleabilidad?.agronomia || null,
           empleabilidad_adm: datos.empleabilidad?.administracion || null,
-          comentario_final:  datos.comentarioFinal || null,
-          firma_svg:         datos.firma || null,
+          comentario_final: datos.comentarioFinal || null,
+          firma_svg: datos.firma || null,
           acepta_manifiesto: datos.acepta || false,
         })
-        await supabase.from('certificados').insert({
-          participante_id: estado.participanteId,
-          codigo_qr:       codigo,
-          programas:       estado.programasOrden,
-        })
-        await supabase.from('participantes')
-          .update({ completado: true })
-          .eq('id', estado.participanteId)
+        await supabase.from('certificados').insert({ participante_id: estado.participanteId, codigo_qr: codigo, programas: estado.programasOrden })
+        await supabase.from('participantes').update({ completado: true }).eq('id', estado.participanteId)
       } catch (err) { console.warn('Error guardando manifiesto:', err) }
     }
-
-    actualizar({
-      empleabilidad:   datos.empleabilidad,
-      firma:           datos.firma,
-      comentarioFinal: datos.comentarioFinal,
-      codigoQR:        codigo,
-      guardando:       false,
-      paso:            PASOS.CERTIFICADO,
-    })
+    actualizar({ empleabilidad: datos.empleabilidad, firma: datos.firma, comentarioFinal: datos.comentarioFinal, codigoQR: codigo, guardando: false, paso: PASOS.CERTIFICADO })
   }, [estado.participanteId, estado.programasOrden, actualizar])
 
   const registrarVideoVisto = useCallback(async (videoId, seccion) => {
     if (!supabaseConfigurado || !estado.participanteId || estado.participanteId?.startsWith('demo-')) return
     try {
-      await supabase.from('videos_vistos').insert({
-        participante_id: estado.participanteId,
-        video_id:        videoId,
-        seccion,
-        visto:           true,
-      })
+      await supabase.from('videos_vistos').insert({ participante_id: estado.participanteId, video_id: videoId, seccion, visto: true })
     } catch (err) { console.warn(err) }
   }, [estado.participanteId])
 
@@ -273,18 +228,9 @@ export function useExperiencia() {
   }, [])
 
   return {
-    ...estado,
-    irAPaso,
-    guardarCaracterizacion,
-    guardarProgramasOrden,
-    guardarPerfilIngreso,
-    guardarPerfilEgreso,
-    guardarLineas,
-    guardarElectivas,
-    guardarManifiesto,
-    registrarVideoVisto,
-    reiniciar,
-    PASOS,
+    ...estado, irAPaso, guardarCaracterizacion, guardarProgramasOrden,
+    guardarPerfilIngreso, guardarPerfilEgreso, guardarLineas, guardarElectivas,
+    guardarManifiesto, registrarVideoVisto, reiniciar, PASOS,
     modoDemo: !supabaseConfigurado,
   }
 }
