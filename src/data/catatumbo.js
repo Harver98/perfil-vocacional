@@ -1,6 +1,5 @@
 // Municipios del territorio Catatumbo
 export const MUNICIPIOS_CATATUMBO = [
-  'San Pablo',
   'Teorama',
   'San Calixto',
   'Hacarí',
@@ -8,6 +7,8 @@ export const MUNICIPIOS_CATATUMBO = [
   'Tibú',
   'El Tarra',
   'El Carmen',
+  'Sardinata',
+  'Otro',
 ]
 
 export const TIPOS_ACTOR = [
@@ -15,7 +16,7 @@ export const TIPOS_ACTOR = [
     id: 'estudiante',
     label: 'Estudiante',
     emoji: '🎒',
-    descripcion: 'Estudiante de bachillerato o técnico',
+    descripcion: 'Joven en proceso de formación',
     color: '#5b2d8e',
     bg: 'linear-gradient(135deg, #5b2d8e, #7b3fa8)',
   },
@@ -31,7 +32,7 @@ export const TIPOS_ACTOR = [
     id: 'comunidad',
     label: 'Comunidad',
     emoji: '🌾',
-    descripcion: 'Habitante, campesino o líder comunitario',
+    descripcion: 'Jóvenes o adultos que hacen parte del territorio',
     color: '#67B93E',
     bg: 'linear-gradient(135deg, #3d7820, #67B93E)',
   },
@@ -39,7 +40,7 @@ export const TIPOS_ACTOR = [
     id: 'organizacion',
     label: 'Organización',
     emoji: '🤝',
-    descripcion: 'Miembro de organización social o productiva',
+    descripcion: 'Integrante de una “organización pública o privada.  Miembro de la comunidad Barí.',
     color: '#c96a00',
     bg: 'linear-gradient(135deg, #c96a00, #f97316)',
   },
