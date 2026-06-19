@@ -170,12 +170,9 @@ function OrdenarFacilidades({ programaId, prog, onGuardar, guardando, T }) {
           <span>{prog.emoji}</span>
           <span className="font-body text-sm" style={T.sub}>Facilidades al ingreso</span>
         </div>
-        <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>
-          ¿Qué debería facilitar la Universidad al inicio de <span className="text-green-400">{prog.nombre}</span>?
-        </h2>
         <p className="font-body text-sm leading-relaxed" style={T.sub}>
-          Lee con atención las alternativas del programa de Administración de empresas y organízalas con ayuda de las flechas según el nivel de importancia que consideres.
-        </p>
+        Lee con atención las alternativas del programa de <span className="text-green-400">{prog.nombre}</span> y organízalas con ayuda de las flechas según el nivel de importancia que consideres.
+      </p>
       </div>
       <div className="space-y-2">
         {orden.map((item, i) => (
