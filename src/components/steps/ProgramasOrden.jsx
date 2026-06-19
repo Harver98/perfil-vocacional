@@ -64,7 +64,7 @@ export default function ProgramasOrden({ onContinuar }) {
         <div className="text-center mb-8">
           <span className="text-5xl block mb-3">🎯</span>
           <h2 className="font-display text-2xl font-black text-white mb-3 balance leading-snug">
-            ¿Qué tan interesado estarías tu, algún familiar o conocido en cada uno de los siguientes programas académicos? Ordénalos desplazándolos con las flechas.
+          Ordena los programas académicos según tu interés. Desplázalos con las flechas.
           </h2>
         </div>
 

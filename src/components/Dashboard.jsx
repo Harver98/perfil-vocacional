@@ -453,16 +453,6 @@ export default function Dashboard() {
     }
 
 
-
-      const conteoLengua = {}
-      partFiltrados.forEach(p => {
-        if (p.importancia_lengua) {
-          conteoLengua[p.importancia_lengua] = (conteoLengua[p.importancia_lengua] || 0) + 1
-        }
-      })
-      const OPCIONES_LENGUA = ['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante']
-      const analisisLengua = OPCIONES_LENGUA.map(op => ({ name: op, value: conteoLengua[op] || 0 }))
-
     return {
       participantes: partFiltrados,
       progOrden:     poFiltrados,
@@ -478,8 +468,6 @@ export default function Dashboard() {
       progPref:     Object.entries(progPref).map(([k, v]) => ({ programa: PROG_LABEL[k] || k, total: v })),
       competenciasIngreso: agruparCompetencias(ingFiltrados),
       competenciasEgreso:  agruparCompetencias(egFiltrados),
-      analisisLengua,
-      hayDatosLengua: analisisLengua.some(d => d.value > 0),
       facilidadesRanking, facilidadesTop3Puestos,
       // KPIs rápidos
       kpiTemaInvestigacionTop: lineasTop[0]?.linea || '—',
@@ -1213,25 +1201,6 @@ export default function Dashboard() {
                         </ResponsiveContainer>
                       : <SinDatos />}
                   </div>
-                </div>
-
-                {/* Lengua Barí — solo datos reales */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Pertinencia de Lengua Barí e Idiomas</h3>
-                  <p className="text-xs text-gray-400 mb-4">Valoración de la inclusión lingüística ancestral</p>
-                  {datosFiltrados.hayDatosLengua
-                    ? <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={datosFiltrados.analisisLengua}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                          <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
-                          <Tooltip />
-                          <Bar dataKey="value" name="Respuestas" radius={[4, 4, 0, 0]}>
-                            {datosFiltrados.analisisLengua.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    : <SinDatos mensaje="Sin respuestas sobre lengua registradas aún." />}
                 </div>
 
                 {/* Conocimiento Cultura Barí */}

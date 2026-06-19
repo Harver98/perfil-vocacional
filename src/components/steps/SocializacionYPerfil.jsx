@@ -410,12 +410,11 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
 
 // ── Lenguas (importancia) + Cultura Barí ──────────────────────────────────────
 function SeccionLenguas({ onGuardar, txtMuted, T }) {
-  const [importanciaLenguas, setImportanciaLenguas] = useState('')
   const [conocimientoBari,   setConocimientoBari]   = useState(5)
   const [deseaConocer,       setDeseaConocer]       = useState(null)
   const [comoConocer,        setComoConocer]        = useState('')
 
-  const puedeGuardar = importanciaLenguas !== '' && deseaConocer !== null
+  const puedeGuardar = deseaConocer !== null
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -485,32 +484,8 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
         )}
       </div>
 
-      {/* Pregunta de importancia de lengua */}
-      <div className="rounded-2xl p-5"
-        style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
-          ¿Qué tan importante consideras que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
-        </p>
-        <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
-        <div className="space-y-2">
-          {['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante'].map(op => (
-            <button key={op} onClick={() => setImportanciaLenguas(op)}
-              className="w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3"
-              style={importanciaLenguas === op
-                ? { background: 'rgba(74,222,128,0.22)', border: '2px solid rgba(74,222,128,0.6)', color: '#ffffff' }
-                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.8)' }}>
-              <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                style={{ borderColor: importanciaLenguas === op ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
-                {importanciaLenguas === op && <div className="w-2 h-2 rounded-full bg-green-400" />}
-              </div>
-              <span className="font-body text-sm leading-snug">{op}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       <button
-        onClick={() => onGuardar({ importanciaLenguas, conocimientoBari, deseaConocer, comoConocer })}
+        onClick={() => onGuardar({ importanciaLenguas: 'Sin especificar', conocimientoBari, deseaConocer, comoConocer })}
         disabled={!puedeGuardar}
         className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all"
         style={puedeGuardar
