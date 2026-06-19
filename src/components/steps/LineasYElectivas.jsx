@@ -30,7 +30,12 @@ export default function LineasYElectivas({
   const [lineasSel,    setLineasSel]    = useState([])
   const [electivasSel, setElectivasSel] = useState([])
 
-  const toggleLinea    = (l) => setLineasSel(prev    => prev.includes(l) ? prev.filter(x => x !== l) : [...prev, l])
+  const MAX_LINEAS = 4
+  const toggleLinea = (l) => setLineasSel(prev => {
+    if (prev.includes(l)) return prev.filter(x => x !== l)
+    if (prev.length >= MAX_LINEAS) return prev
+    return [...prev, l]
+  })
   const toggleElectiva = (e) => setElectivasSel(prev => prev.includes(e) ? prev.filter(x => x !== e) : [...prev, e])
 
   const handleGuardarLineas = async () => {
@@ -75,15 +80,15 @@ export default function LineasYElectivas({
                 {prog.emoji} {prog.nombre}
               </div>
               <h2 className="font-display text-3xl font-black text-white mb-2">
-                ¿En qué temas debería investigar este programa?
+                ¿En qué temas consideras que debería investigar este programa?
               </h2>
               <p className="text-white/60 font-body text-sm">{prog.preguntaLineas}</p>
             </div>
 
             <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-5">
               <p className="text-white/50 font-body text-xs mb-4 uppercase tracking-wide">
-                Selecciona todos los que consideres relevantes para el territorio
-              </p>
+            Selecciona hasta {MAX_LINEAS} que consideres relevantes para el territorio · {lineasSel.length}/{MAX_LINEAS}
+          </p>
               <div className="flex flex-wrap gap-2">
                 {prog.lineasInvestigacion.map(l => (
                   <ChipSeleccionable key={l} label={l} seleccionado={lineasSel.includes(l)}

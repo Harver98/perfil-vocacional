@@ -50,11 +50,11 @@ const PERFIL_INGRESO_INFO = {
 
 // ── Fotos de los talleres de socialización, repartidas en el flujo ──────────
 const FOTOS_TALLERES = [
-  { src: '/taller-jovenes-cartelera.jpg',     alt: 'Estudiantes construyendo una cartelera participativa sobre el territorio' },
-  { src: '/taller-salon-completo.jpg',        alt: 'Socialización del programa Catatumbo con estudiantes' },
-  { src: '/taller-mesa-comunidad.jpg',        alt: 'Mesa de trabajo con líderes comunitarios del territorio' },
-  { src: '/taller-mesa-funcionarios.jpg',     alt: 'Mesa de trabajo con priorización de ideas en notas adhesivas' },
-  { src: '/taller-mesa-casa-justicia.jpg',    alt: 'Socialización con la Casa de Justicia y Convivencia Ciudadana' },
+  { src: '/taller-jovenes-cartelera.jpeg',     alt: 'Estudiantes construyendo una cartelera participativa sobre el territorio' },
+  { src: '/taller-salon-completo.jpeg',        alt: 'Socialización del programa Catatumbo con estudiantes' },
+  { src: '/taller-mesa-comunidad.jpeg',        alt: 'Mesa de trabajo con líderes comunitarios del territorio' },
+  { src: '/taller-mesa-funcionarios.jpeg',     alt: 'Mesa de trabajo con priorización de ideas en notas adhesivas' },
+  { src: '/taller-mesa-casa-justicia.png',    alt: 'Socialización con la Casa de Justicia y Convivencia Ciudadana' },
 ]
 
 function FotoTaller({ index, caption }) {
@@ -128,7 +128,7 @@ function PerfilIngresoLectura({ programaId, prog, onEntendido, T }) {
           <div className="rounded-2xl px-5 py-4 mb-4 text-center"
             style={{ background: 'rgba(74,222,128,0.1)', border: '1px solid rgba(74,222,128,0.25)' }}>
             <p className="font-body text-sm text-green-400 font-medium">
-              ¡Tu participación construye esta universidad!
+              A continuación, encontrarás las alternativas que la universidad podría ofrecer para fortalecer esas cualidades.  ¡Ayúdanos a ordenarlas!
             </p>
           </div>
           <button onClick={onEntendido} className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all" style={T.btnPrincipal}>
@@ -174,7 +174,7 @@ function OrdenarFacilidades({ programaId, prog, onGuardar, guardando, T }) {
           ¿Qué debería facilitar la Universidad al inicio de <span className="text-green-400">{prog.nombre}</span>?
         </h2>
         <p className="font-body text-sm leading-relaxed" style={T.sub}>
-          Ordena según consideres más importante. Arrastra o usa las flechas.
+          Lee con atención las alternativas del programa de Administración de empresas y organízalas con ayuda de las flechas según el nivel de importancia que consideres.
         </p>
       </div>
       <div className="space-y-2">
@@ -286,7 +286,7 @@ function OrdenarPerfilEgresoParte({ prog, categoria, tituloVisible, subtituloVis
                 <div className="flex-1"><Chip item={i} col="pri" /></div>
               </div>
             ))}
-            {prioridades.length === 0 && <p className="text-xs text-center py-4 leading-snug text-white/30">← Toca o arrastra para priorizar</p>}
+            {prioridades.length === 0 && <p className="text-xs text-center py-4 leading-snug text-white/30">← Toca para priorizar</p>}
           </div>
         </div>
       </div>
@@ -342,45 +342,59 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
       <div className="text-center">
         <span className="text-4xl block mb-3">📊</span>
         <h2 className="font-display text-2xl font-black text-white mb-1">¿Cómo vamos?</h2>
-        <p className="font-body text-sm" style={T.muted}>Lo que está construyendo la comunidad</p>
+        <p className="font-body text-sm" style={T.muted}>Así va la construcción de la Universidad Nacional del Catatumbo</p>
       </div>
 
-      <FotoTaller index={1} caption="Estudiantes y comunidad participando en los talleres de socialización del Catatumbo." />
+      <div className="rounded-2xl overflow-hidden mb-2" style={{ aspectRatio: '16/9', border: '1px solid rgba(255,255,255,0.12)' }}>
+            <iframe
+              width="100%"
+              height="100%"
+              src="https://www.youtube.com/embed/qrUnjEiRmxk"
+              title="Construcción de la Universidad Nacional del Catatumbo"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
 
-      <div className="grid grid-cols-1 gap-3">
+      {/* Indicador en vivo */}
+      <div className="flex items-center justify-center gap-2 mb-1">
+        <span className="relative flex h-2 w-2">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400"></span>
+        </span>
+        <p className="font-body text-xs font-semibold uppercase tracking-widest" style={{ color: '#4ade80' }}>
+          En vivo · se actualiza automáticamente
+        </p>
+      </div>
+
+      <div className="grid grid-cols-3 gap-2">
         {[
-          { label: '👥 Participantes completados', value: datos.total },
-          { label: '📍 Municipio más participativo', value: datos.municipio },
-          { label: '🎓 Programa de mayor interés', value: datos.programa },
+          { label: 'Participantes', value: datos.total },
+          { label: 'Municipio top', value: datos.municipio },
+          { label: 'Programa top', value: datos.programa },
         ].map((d, i) => (
-          <div key={i} className="rounded-2xl p-5 text-center"
+          <div key={i} className="rounded-xl p-3 text-center"
             style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-xs font-display font-bold uppercase tracking-widest mb-2" style={T.muted}>{d.label}</p>
-            <p className="font-display font-black text-3xl text-white">{d.value}</p>
+            <p className="text-[10px] font-display font-bold uppercase tracking-wide mb-1" style={T.muted}>{d.label}</p>
+            <p className="font-display font-black text-base text-white leading-tight">{d.value}</p>
           </div>
         ))}
       </div>
       <div className="rounded-2xl overflow-hidden"
         style={{ background: 'rgba(15,23,42,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <button onClick={() => setMostrarPerfil(m => !m)}
-          className="w-full flex items-center justify-between px-5 py-4 text-left"
-          style={{ borderBottom: mostrarPerfil ? '1px solid rgba(255,255,255,0.08)' : 'none' }}>
-          <div>
-            <p className="font-display font-bold text-white text-sm">
-              Con tu apoyo hemos construido el perfil de egreso para <span className="text-green-400">{prog.nombre}</span>
-            </p>
-            <p className="font-body text-xs mt-0.5" style={T.muted}>Toca para ver el perfil completo</p>
-          </div>
-          <span className="text-white/40 text-lg ml-3">{mostrarPerfil ? '▲' : '▼'}</span>
-        </button>
-        {mostrarPerfil && (
-          <div className="px-5 py-4 bg-black/20">
-            <p className="font-body text-sm leading-relaxed whitespace-pre-line" style={T.sub}>
-              {prog.perfilEgresoTexto}
-            </p>
-          </div>
-        )}
+        <div className="px-5 py-4">
+          <p className="font-display font-bold text-white text-sm">
+            Con tu apoyo hemos construido el perfil de egreso para <span className="text-green-400">{prog.nombre}</span>
+          </p>
+        </div>
+        <div className="px-5 pb-5 -mt-1">
+          <p className="font-body text-sm leading-relaxed whitespace-pre-line" style={T.sub}>
+            {prog.perfilEgresoTexto}
+          </p>
+        </div>
       </div>
+
       <button onClick={onContinuar} className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all" style={T.btnPrincipal}>
         {siguienteLabel}
       </button>
@@ -408,30 +422,6 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
       </div>
 
       <FotoTaller index={2} caption="Mesas de trabajo con líderes comunitarios y autoridades del territorio." />
-
-      {/* Pregunta de importancia de lengua */}
-      <div className="rounded-2xl p-5"
-        style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
-          ¿Qué tan importante considera que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
-        </p>
-        <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
-        <div className="space-y-2">
-          {['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante'].map(op => (
-            <button key={op} onClick={() => setImportanciaLenguas(op)}
-              className="w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3"
-              style={importanciaLenguas === op
-                ? { background: 'rgba(74,222,128,0.22)', border: '2px solid rgba(74,222,128,0.6)', color: '#ffffff' }
-                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.8)' }}>
-              <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
-                style={{ borderColor: importanciaLenguas === op ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
-                {importanciaLenguas === op && <div className="w-2 h-2 rounded-full bg-green-400" />}
-              </div>
-              <span className="font-body text-sm leading-snug">{op}</span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Barra 0-10 conocimiento Barí */}
       <div className="rounded-2xl p-5"
@@ -487,6 +477,30 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
               }} />
           </div>
         )}
+      </div>
+
+      {/* Pregunta de importancia de lengua */}
+      <div className="rounded-2xl p-5"
+        style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
+          ¿Qué tan importante considera que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
+        </p>
+        <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
+        <div className="space-y-2">
+          {['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante'].map(op => (
+            <button key={op} onClick={() => setImportanciaLenguas(op)}
+              className="w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3"
+              style={importanciaLenguas === op
+                ? { background: 'rgba(74,222,128,0.22)', border: '2px solid rgba(74,222,128,0.6)', color: '#ffffff' }
+                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.8)' }}>
+              <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                style={{ borderColor: importanciaLenguas === op ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
+                {importanciaLenguas === op && <div className="w-2 h-2 rounded-full bg-green-400" />}
+              </div>
+              <span className="font-body text-sm leading-snug">{op}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       <button
@@ -641,7 +655,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
                 <p className="font-body text-base leading-relaxed" style={T.sub}>{prog.descripcion}</p>
               </div>
 
-              <FotoTaller index={0} caption="Jóvenes del Catatumbo construyendo colectivamente su visión del territorio." />
+              <FotoTaller index={0} caption="Comunidad del Catatumbo construyendo colectivamente su visión del territorio." />
 
               <Card>
                 <p className="text-xs font-display font-bold uppercase tracking-widest mb-3" style={T.muted}>¿Qué aporta al Catatumbo?</p>
@@ -683,7 +697,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
               prog={prog}
               categoria="saber"
               tituloVisible="¿Qué debería poder comprender y analizar un profesional de"
-              subtituloVisible="Toca o arrastra las afirmaciones hacia 'Mis Prioridades' para ordenarlas según su importancia."
+              subtituloVisible="Toca las afirmaciones y se moverán automáticamente hacia 'Mis Prioridades' para que las ordenes según su importancia."
               fotoIndex={3}
               fotoCaption="Priorización colectiva de ideas durante las jornadas de socialización."
               onSiguiente={handleSiguienteParteA}

@@ -56,13 +56,11 @@ export default function Empleabilidad({ nombre, municipio, programasOrden, onGua
         {progPrincipal && (
           <div className="rounded-2xl p-5" style={{ background: 'rgba(0,0,0,0.35)', border: '1px solid rgba(255,255,255,0.15)' }}>
             <p className="font-body text-sm mb-3" style={{ color: 'rgba(255,255,255,0.7)' }}>
-              Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores
-              podrían trabajar los egresados de{' '}
-              <strong className="text-white">{progPrincipal.nombre}</strong>{' '}
-              en el Catatumbo?
+              Desde tu experiencia, ¿qué empresas, instituciones u organizaciones del Catatumbo podrían ofrecer prácticas o empleos 
+              a los profesionales de <strong className="text-white">{progPrincipal.nombre}</strong>{' '}?
             </p>
             <textarea rows={4} value={empleabilidadTexto} onChange={e => setEmpleabilidadTexto(e.target.value)}
-              placeholder="Ej: Alcaldías, ICBF, hospitales, cooperativas agrícolas, ONG..."
+              placeholder=""
               style={{
                 width: '100%', background: 'rgba(0,0,0,0.25)',
                 border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12,
@@ -108,7 +106,7 @@ export default function Empleabilidad({ nombre, municipio, programasOrden, onGua
             Al finalizar, sus aportes serán sistematizados como insumo para fortalecer la propuesta académica.
           </p>
           <textarea rows={3} value={comentarioFinal} onChange={e => setComentarioFinal(e.target.value)}
-            placeholder='"Gracias por escuchar nuestra voz..."'
+            placeholder='La Universidad también debería tener en cuenta que…'
             style={{
               width: '100%', background: 'rgba(0,0,0,0.25)',
               border: '1px solid rgba(255,255,255,0.2)', borderRadius: 12,
@@ -139,11 +137,15 @@ export default function Empleabilidad({ nombre, municipio, programasOrden, onGua
         </button>
 
         {/* Mensaje de cierre */}
-        <div className="rounded-2xl p-5 text-center" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.1)' }}>
-          <p className="font-body text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.65)' }}>
-            "Gracias por participar en este proceso de validación. Tus aportes serán fundamentales
-            para ajustar la propuesta académica y fortalecer una oferta de educación superior
-            pertinente, incluyente y territorializada para el Catatumbo."
+        <div className="relative rounded-2xl p-6 text-center overflow-hidden"
+          style={{ background: 'linear-gradient(135deg, rgba(103,185,62,0.18), rgba(0,0,0,0.3))', border: '1px solid rgba(103,185,62,0.35)' }}>
+          <span className="text-3xl block mb-3">🙌</span>
+          <p className="font-display font-bold text-base leading-snug mb-2" style={{ color: '#a8e063' }}>
+            ¡Gracias por construir esta universidad con nosotros!
+          </p>
+          <p className="font-body text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.8)' }}>
+            Tus aportes serán fundamentales para ajustar la propuesta académica y fortalecer una oferta
+            de educación superior pertinente, incluyente y territorializada para el Catatumbo.
           </p>
         </div>
 

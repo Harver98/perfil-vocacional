@@ -587,9 +587,14 @@ export default function Dashboard() {
       return {
         'ID Participante':                     p.id,
         'Nombre Completo':                     p.nombre || 'Anónimo',
+        'Correo Electrónico':                  p.correo || '',
         'Municipio':                           p.municipio || '',
-        'Programa Académico (Preferencia 1)':  PROG_LABEL[programa1] || programa1,
-        'Programa Preferencia 2':              PROG_LABEL[programa2] || programa2,
+        'Corregimiento':                       p.corregimiento || '',
+        'Vereda':                              p.vereda || '',
+        'Zona':                                p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
+        'Edad':                                p.edad || '',
+        'Tipo de Actor':                       ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+        'Programa Académico Preferencia 1':    PROG_LABEL[programa1] || programa1,
         '¿Completó Todo?':                     p.completado ? 'SÍ' : 'NO',
         'Facilidades de Ingreso (ordenadas)':  facilidadesRep,
         'Líneas de Investigación':             lineasRep,
@@ -990,7 +995,7 @@ export default function Dashboard() {
             {vista === 2 && (
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1">¿En qué temas debería investigar este programa?</h3>
+                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1"> ¿En qué temas consideras que debería investigar este programa?</h3>
                   <p className="text-xs text-gray-400 mb-4">Top 10 temas más seleccionados {filtroPrograma ? `· ${PROG_LABEL[filtroPrograma]}` : '· Todos los programas'}</p>
                   {datosFiltrados.lineasTop.length
                     ? <>

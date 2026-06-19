@@ -64,7 +64,7 @@ export default function ProgramasOrden({ onContinuar }) {
         <div className="text-center mb-8">
           <span className="text-5xl block mb-3">🎯</span>
           <h2 className="font-display text-2xl font-black text-white mb-3 balance leading-snug">
-            ¿Usted, algún familiar o conocido estaría interesado en cuál de los siguientes programas? Ordénelos en orden de importancia a partir de la siguiente escala continua…
+            ¿Qué tan interesado estarías tu, algún familiar o conocido en cada uno de los siguientes programas académicos? Ordénalos desplazándolos con las flechas.
           </h2>
         </div>
 
@@ -105,7 +105,7 @@ export default function ProgramasOrden({ onContinuar }) {
                     <span className="text-2xl">{prog.emoji}</span>
                     <p className="font-display font-bold text-white text-base leading-tight">{prog.nombre}</p>
                   </div>
-                  <p className="text-white/60 font-body text-xs leading-tight line-clamp-1">{prog.descripcion}</p>
+                  <p className="text-white/60 font-body text-xs leading-snug">{prog.descripcion}</p>
                 </div>
 
                 {/* Botones de orden (para móvil) */}
