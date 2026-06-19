@@ -336,23 +336,11 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
 
   return (
     <div className="space-y-5 animate-fade-up">
+      {/* 1. Título ¿Cómo vamos? */}
       <div className="text-center">
         <span className="text-4xl block mb-3">📊</span>
         <h2 className="font-display text-2xl font-black text-white mb-1">¿Cómo vamos?</h2>
-        <p className="font-body text-sm" style={T.muted}>Así va la construcción de la Universidad Nacional del Catatumbo</p>
       </div>
-
-      <div className="rounded-2xl overflow-hidden mb-2" style={{ aspectRatio: '16/9', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <iframe
-              width="100%"
-              height="100%"
-              src="https://www.youtube.com/embed/qrUnjEiRmxk"
-              title="Construcción de la Universidad Nacional del Catatumbo"
-              frameBorder="0"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
 
       {/* Indicador en vivo */}
       <div className="flex items-center justify-center gap-2 mb-1">
@@ -365,19 +353,40 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
+      {/* 2. Municipio top / Programa top — con iconos y color diferenciado */}
+      <div className="grid grid-cols-3 gap-2.5">
         {[
-          { label: 'Participantes', value: datos.total },
-          { label: 'Municipio top', value: datos.municipio },
-          { label: 'Programa top', value: datos.programa },
+          { icon: '👥', label: 'Participantes', value: datos.total, color: '#4ade80' },
+          { icon: '📍', label: 'Municipio con más participación', value: datos.municipio, color: '#60a5fa' },
+          { icon: '🎓', label: 'Programa más elegido', value: datos.programa, color: '#c084fc' },
         ].map((d, i) => (
-          <div key={i} className="rounded-xl p-3 text-center"
-            style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
-            <p className="text-[10px] font-display font-bold uppercase tracking-wide mb-1" style={T.muted}>{d.label}</p>
-            <p className="font-display font-black text-base text-white leading-tight">{d.value}</p>
+          <div key={i} className="relative rounded-2xl p-4 text-center overflow-hidden"
+            style={{ background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: d.color }} />
+            <span className="text-xl block mb-1.5">{d.icon}</span>
+            <p className="text-[10px] font-display font-bold uppercase tracking-wide mb-1 leading-tight" style={T.muted}>{d.label}</p>
+            <p className="font-display font-black text-base leading-tight" style={{ color: d.color }}>{d.value}</p>
           </div>
         ))}
       </div>
+
+      {/* 3. Así va la construcción + video */}
+      <div className="text-center mt-2">
+        <p className="font-body text-sm" style={T.muted}>Así va la construcción de la Universidad Nacional del Catatumbo</p>
+      </div>
+      <div className="rounded-2xl overflow-hidden mb-2" style={{ aspectRatio: '16/9', border: '1px solid rgba(255,255,255,0.12)' }}>
+        <iframe
+          width="100%"
+          height="100%"
+          src="https://www.youtube.com/embed/qrUnjEiRmxk"
+          title="Construcción de la Universidad Nacional del Catatumbo"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+      </div>
+
+      {/* 4. Perfil de egreso */}
       <div className="rounded-2xl overflow-hidden"
         style={{ background: 'rgba(15,23,42,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
         <div className="px-5 py-4">
@@ -413,7 +422,7 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
       <div className="flex items-center gap-3 pb-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.12)' }}>
         <span className="text-3xl">🌐</span>
         <div>
-          <p className="font-display font-bold text-white text-base">Lenguas e Interculturalidad</p>
+          <p className="font-display font-bold text-white text-base">Interculturalidad</p>
           <p className="font-body text-xs" style={txtMuted}>Una reflexión sobre la formación universitaria en el Catatumbo</p>
         </div>
       </div>
@@ -480,7 +489,7 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
       <div className="rounded-2xl p-5"
         style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
         <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
-          ¿Qué tan importante considera que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
+          ¿Qué tan importante consideras que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
         </p>
         <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
         <div className="space-y-2">
@@ -668,7 +677,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
                 <p className="font-body text-sm leading-relaxed" style={T.sub}>{prog.justificacion}</p>
               </Card>
               <Card>
-                <p className="font-display font-bold text-sm mb-3 text-white">¿Cómo imagina que este programa transformará el territorio?</p>
+                <p className="font-display font-bold text-sm mb-3 text-white">¿Cómo imaginas que este programa transformará el territorio?</p>
                 <textarea rows={3} value={imaginaPrograma} onChange={e => setImaginaPrograma(e.target.value)}
                   placeholder="Comparte tu visión..." style={T.textarea} />
               </Card>
@@ -727,7 +736,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
               prog={prog}
               onContinuar={handleDespuesComoVamos}
               T={T}
-              siguienteLabel={esUltimo ? 'Ir a la reflexión final →' : 'Siguiente programa →'}
+              siguienteLabel={esUltimo ? 'Siguiente →' : 'Siguiente →'}
             />
           )}
 
