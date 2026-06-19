@@ -562,11 +562,10 @@ export default function Dashboard() {
   }
 
   // ── Exportación Excel multi-hoja (Sábana + Respuestas Abiertas + Resúmenes) ──
-  // ── Exportación Excel multi-hoja (Sábana + Respuestas Abiertas + Resúmenes) ──
   const procesarExportacionExcel = () => {
     if (!rawData.participantes?.length) return
 
-    // Hoja 1: Sábana completa
+    // Hoja 1: Sábana completa (reutiliza la misma lógica del CSV)
     const sabana = rawData.participantes.map(p => {
       const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
       const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
@@ -589,8 +588,6 @@ export default function Dashboard() {
         'ID Participante':                     p.id,
         'Nombre Completo':                     p.nombre || 'Anónimo',
         'Municipio':                           p.municipio || '',
-        'Corregimiento':                       p.corregimiento || '', // SOLUCIÓN PROBLEMA 4
-        'Vereda':                              p.vereda || '',        // SOLUCIÓN PROBLEMA 4
         'Programa Académico (Preferencia 1)':  PROG_LABEL[programa1] || programa1,
         'Programa Preferencia 2':              PROG_LABEL[programa2] || programa2,
         '¿Completó Todo?':                     p.completado ? 'SÍ' : 'NO',
@@ -607,110 +604,60 @@ export default function Dashboard() {
       }
     })
 
-    // Hoja 2: Respuestas Abiertas
-      const respuestasAbiertas = []
-      
-      rawData.participantes.forEach(p => {
-        const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
-        const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-        const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
-  
-        // SOLUCIÓN PROBLEMA 1: Visión Territorial (Evita romper el ID con split)
-        const visionesUnicas = new Map()
-        ;(rawData.perfilIngreso || [])
-          .filter(i => i.participante_id === p.id && i.vision_territorial)
-          .forEach(i => {
-            // Guardamos usando directamente el ID del programa como clave
-            if (!visionesUnicas.has(i.programa)) {
-              visionesUnicas.set(i.programa, i.vision_territorial)
-            }
-          })
-  
-        visionesUnicas.forEach((vision, progId) => {
-          respuestasAbiertas.push({
-            'Programa Académico': PROG_LABEL[progId] || progId || progLabel,
-            'Pregunta': '¿Cómo imagina que este programa transformará el territorio?',
-            'Respuesta': vision,
-            'Fecha de Registro': fecha,
-          })
+    // Hoja 2: Respuestas Abiertas (Programa Académico | Pregunta | Respuesta | Fecha)
+    const respuestasAbiertas = []
+    rawData.participantes.forEach(p => {
+      const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
+      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+      const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+
+      // Visión territorial — vision_territorial se repite en cada fila de facilidad ordenada
+      // (5 facilidades = 5 filas con el mismo texto), tomamos solo una representativa
+      // por combinación participante + programa para no duplicar la respuesta en el Excel.
+      const ingresoUnicos = new Map()
+      ;(rawData.perfilIngreso || [])
+        .filter(i => i.participante_id === p.id && i.vision_territorial)
+        .forEach(i => {
+          const key = `${i.participante_id}__${i.programa}`
+          if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
         })
-  
-        // SOLUCIÓN PROBLEMA 2: Rasgo especial del egresado (Filtrado estricto anti-vacíos)
-        const rasgosUnicos = new Map()
-        ;(rawData.perfilEgreso || [])
-          .filter(e => {
-            // Validamos que sea del participante y que TENGA texto real, no solo espacios
-            return e.participante_id === p.id && 
-                   e.comentario_libre !== null && 
-                   e.comentario_libre !== undefined && 
-                   String(e.comentario_libre).trim() !== ''; 
-          })
-          .forEach(e => {
-            // Guardamos usando directamente el ID del programa como clave
-            if (!rasgosUnicos.has(e.programa)) {
-              rasgosUnicos.set(e.programa, String(e.comentario_libre).trim())
-            }
-          })
-  
-        rasgosUnicos.forEach((comentario, progId) => {
-          const nombrePrograma = PROG_LABEL[progId] || progId
-          respuestasAbiertas.push({
-            'Programa Académico': nombrePrograma,
-            'Pregunta': `¿Qué rasgo o característica especial considera que debería tener un profesional de ${nombrePrograma} de la Universidad Nacional del Catatumbo?`,
-            'Respuesta': comentario,
-            'Fecha de Registro': fecha,
-          })
+      ingresoUnicos.forEach(i => {
+        respuestasAbiertas.push({
+          'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
+          'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
+          'Respuesta':          i.vision_territorial,
+          'Fecha de Registro':  fecha,
         })
+      })
 
-        console.log('Participante:', p.id)
-        console.log('Rasgos únicos:', [...rasgosUnicos.entries()])
+      // Rasgo especial egresado (perfil_egreso.comentario_libre) — el mismo comentario se repite
+      // en cada fila de competencia priorizada (saber/ser), así que tomamos solo una representativa
+      // por combinación participante + programa para no duplicar la respuesta en el Excel.
+      const egresoUnicos = new Map()
+      ;(rawData.perfilEgreso || [])
+        .filter(e => e.participante_id === p.id && e.comentario_libre)
+        .forEach(e => {
+          const key = `${e.participante_id}__${e.programa}`
+          if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+        })
+      egresoUnicos.forEach(e => {
+        respuestasAbiertas.push({
+          'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
+          'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
+          'Respuesta':          e.comentario_libre,
+          'Fecha de Registro':  fecha,
+        })
+      })
 
-        console.log(
-          'Perfil egreso participante:',
-          (rawData.perfilEgreso || []).filter(
-            e => e.participante_id === p.id
-          )
-        )
-
-      // SOLUCIÓN PROBLEMA 3: Incorporar campos de empleabilidad distribuidos por programa correspondiente
+      // Mensaje final del manifiesto
       const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-      if (manifiestoFila) {
-        const prefPregunta = 'Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de [Programa] en el Catatumbo?'
-        
-        if (manifiestoFila.empleabilidad_ts) {
-          respuestasAbiertas.push({
-            'Programa Académico': PROG_LABEL['trabajo_social'],
-            'Pregunta': prefPregunta.replace('[Programa]', PROG_LABEL['trabajo_social']),
-            'Respuesta': manifiestoFila.empleabilidad_ts,
-            'Fecha de Registro': fecha,
-          })
-        }
-        if (manifiestoFila.empleabilidad_ia) {
-          respuestasAbiertas.push({
-            'Programa Académico': PROG_LABEL['agronomia'],
-            'Pregunta': prefPregunta.replace('[Programa]', PROG_LABEL['agronomia']),
-            'Respuesta': manifiestoFila.empleabilidad_ia,
-            'Fecha de Registro': fecha,
-          })
-        }
-        if (manifiestoFila.empleabilidad_adm) {
-          respuestasAbiertas.push({
-            'Programa Académico': PROG_LABEL['administracion'],
-            'Pregunta': prefPregunta.replace('[Programa]', PROG_LABEL['administracion']),
-            'Respuesta': manifiestoFila.empleabilidad_adm,
-            'Fecha de Registro': fecha,
-          })
-        }
-
-        // Mensaje final del manifiesto
-        if (manifiestoFila.comentario_final) {
-          respuestasAbiertas.push({
-            'Programa Académico': progLabel,
-            'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
-            'Respuesta':          manifiestoFila.comentario_final,
-            'Fecha de Registro':  fecha,
-          })
-        }
+      if (manifiestoFila?.comentario_final) {
+        respuestasAbiertas.push({
+          'Programa Académico': progLabel,
+          'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
+          'Respuesta':          manifiestoFila.comentario_final,
+          'Fecha de Registro':  fecha,
+        })
       }
 
       // Cómo conocer cultura Barí
@@ -722,9 +669,25 @@ export default function Dashboard() {
           'Fecha de Registro':  fecha,
         })
       }
+
+      // Empleabilidad — dónde podrían trabajar los egresados (guardada en manifiesto, una columna por programa)
+      const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      if (manifiestoEmp) {
+        const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
+        const campoEmp = EMP_CAMPO[programa1]
+        const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
+        if (valorEmp) {
+          respuestasAbiertas.push({
+            'Programa Académico': progLabel,
+            'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
+            'Respuesta':          valorEmp,
+            'Fecha de Registro':  fecha,
+          })
+        }
+      }
     })
 
-    // Hoja 3: Resumen Respuestas Abiertas
+    // Hoja 3: Resumen Respuestas Abiertas (frecuencia de respuestas repetidas, normalizando texto)
     const normalizar = (txt) => (txt || '').trim().toLowerCase().replace(/\s+/g, ' ')
     const construirResumen = (pregunta) => {
       const filas = respuestasAbiertas.filter(r => r.Pregunta === pregunta)
@@ -756,12 +719,12 @@ export default function Dashboard() {
       })
     })
 
-    // Hoja 4: Top Temas de Investigación
+    // Hoja 4: Top Temas de Investigación (con %)
     const lineasResumen = (datosFiltrados?.lineasTop || []).map((l, i) => ({
       'Ranking': i + 1, 'Tema de Investigación': l.linea, 'Cantidad de Votos': l.total, 'Porcentaje': `${l.porcentaje}%`,
     }))
 
-    // Hoja 5: Top Electivas
+    // Hoja 5: Top Electivas (con %)
     const electivasResumen = (datosFiltrados?.electivasTop || []).map((e, i) => ({
       'Ranking': i + 1, 'Materia Complementaria': e.electiva, 'Cantidad de Votos': e.total, 'Porcentaje': `${e.porcentaje}%`,
     }))

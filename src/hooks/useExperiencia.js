@@ -89,6 +89,7 @@ export function useExperiencia() {
     actualizar({ guardando: false, programaActual: orden[0], paso: PASOS.SOCIALIZACION })
   }, [estado.participanteId, actualizar])
 
+  // Guarda perfil de ingreso: facilidades ordenadas (categoria='facilidad') + visión territorial
   const guardarPerfilIngreso = useCallback(async (datos) => {
     actualizar({ guardando: true })
     const nuevo = { ...estado.perfilIngreso, [datos.programa]: datos }
@@ -100,77 +101,60 @@ export function useExperiencia() {
           orden_prioridad: p.orden, comentario_libre: datos.comentario || null,
           vision_territorial: datos.visionTerritorial || null,
         }))
-        if (rows.length) await supabase.from('perfil_ingreso').insert(rows)
-      } catch (err) { console.warn(err) }
+        if (rows.length) {
+          const { error } = await supabase.from('perfil_ingreso').insert(rows)
+          if (error) console.error('Error guardando perfil_ingreso:', error)
+        }
+      } catch (err) { console.warn('Error guardando ingreso:', err) }
     }
     actualizar({ perfilIngreso: nuevo, guardando: false, paso: PASOS.PERFIL_EGRESO })
   }, [estado.participanteId, estado.perfilIngreso, actualizar])
 
-const guardarPerfilEgreso = useCallback(async (datos) => {
-  actualizar({ guardando: true })
-  const nuevo = {
-    ...estado.perfilEgreso,
-    [datos.programa]: datos
-  }
-  if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
-    try {
-      let rows = []
-      if (datos.prioridades && datos.prioridades.length > 0) {
-        rows = datos.prioridades.map(p => ({
+  // Guarda perfil de egreso: competencias priorizadas + comentario abierto + datos de lengua/Barí
+  const guardarPerfilEgreso = useCallback(async (datos) => {
+    actualizar({ guardando: true })
+    const nuevo = { ...estado.perfilEgreso, [datos.programa]: datos }
+    if (supabaseConfigurado && !estado.participanteId?.startsWith('demo-')) {
+      try {
+        const rows = (datos.prioridades || []).map(p => ({
           participante_id: estado.participanteId,
-          programa: datos.programa,
-          competencia: p.competencia,
-          orden_prioridad: p.orden,
+          programa:         datos.programa,
+          competencia:      p.competencia,
+          orden_prioridad:  p.orden,
           comentario_libre: datos.comentario || null,
         }))
-      } else {
-          rows = [{
+        if (rows.length) {
+          const { error } = await supabase.from('perfil_egreso').insert(rows)
+          if (error) console.error('Error guardando perfil_egreso:', error)
+        } else {
+          // Si por algún motivo no hay prioridades, igual guardamos el comentario en una fila
+          const { error } = await supabase.from('perfil_egreso').insert({
             participante_id: estado.participanteId,
-            programa: datos.programa,
-            competencia: 'Rasgo especial del profesional',
-            orden_prioridad: 1,
+            programa:         datos.programa,
+            competencia:      null,
+            orden_prioridad:  null,
             comentario_libre: datos.comentario || null,
-          }]
+          })
+          if (error) console.error('Error guardando perfil_egreso (sin prioridades):', error)
         }
-      const { data, error } = await supabase
-        .from('perfil_egreso')
-        .insert(rows)
 
-      if (error) {
-        console.error('ERROR PERFIL EGRESO:', error)
-      } else {
-        console.log('GUARDADO PERFIL EGRESO:', data)
+        // Guardar datos de lengua y cultura Barí en participantes
+        const updateData = {}
+        if (datos.importancia_lengua !== undefined) updateData.importancia_lengua = datos.importancia_lengua
+        if (datos.conocimiento_bari  !== undefined) updateData.conocimiento_bari  = datos.conocimiento_bari
+        if (datos.desea_conocer_bari !== undefined) updateData.desea_conocer_bari = datos.desea_conocer_bari
+        if (datos.como_conocer_bari  !== undefined) updateData.como_conocer_bari  = datos.como_conocer_bari || null
+
+        if (Object.keys(updateData).length) {
+          const { error } = await supabase.from('participantes').update(updateData).eq('id', estado.participanteId)
+          if (error) console.error('Error actualizando datos Barí/lengua:', error)
+        }
+      } catch (err) {
+        console.warn('Error guardando egreso:', err)
       }
-      console.log('DATA:', data)
-      console.log('ERROR:', error)
-      // Guardar datos cultura Barí
-      const updateData = {}
-      if (datos.importancia_lengua)
-        updateData.importancia_lengua = datos.importancia_lengua
-      if (datos.conocimiento_bari !== undefined)
-        updateData.conocimiento_bari = datos.conocimiento_bari
-      if (datos.desea_conocer_bari !== undefined)
-        updateData.desea_conocer_bari = datos.desea_conocer_bari
-      if (datos.como_conocer_bari !== undefined)
-        updateData.como_conocer_bari = datos.como_conocer_bari || null
-      if (Object.keys(updateData).length) {
-        await supabase
-          .from('participantes')
-          .update(updateData)
-          .eq('id', estado.participanteId)
-      }
-    } catch (err) {
-      console.warn('Error guardando egreso:', err)
     }
-  }
-
-  actualizar({
-    perfilEgreso: nuevo,
-    guardando: false,
-    paso: PASOS.LINEAS_INVESTIGACION
-  })
-
-}, [estado.participanteId, estado.perfilEgreso, actualizar])
+    actualizar({ perfilEgreso: nuevo, guardando: false, paso: PASOS.LINEAS_INVESTIGACION })
+  }, [estado.participanteId, estado.perfilEgreso, actualizar])
 
   const guardarLineas = useCallback(async (lineasSeleccionadas) => {
     actualizar({ guardando: true })

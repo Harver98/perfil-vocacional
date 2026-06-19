@@ -2,12 +2,12 @@ import { useState, useCallback, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { PROGRAMAS } from '../../data/programas'
 
-// ── Perfil de ingreso por programa ───────────────────────────────────────────
+// ── Características de lectura del perfil de ingreso por programa ───────────
 const PERFIL_INGRESO_INFO = {
   agronomia: {
     caracteristicas: [
-      { emoji: '🌱', titulo: 'Gusto por el campo', descripcion: 'Interés real por la naturaleza, la producción de la tierra y el trabajo al aire libre (no le teme a embarrarse las botas).' },
-      { emoji: '🔬', titulo: 'Curiosidad científica', descripcion: 'Afinidad básica por entender cómo funcionan las plantas, el suelo y el agua (biología y química básica).' },
+      { emoji: '🌱', titulo: 'Gusto por el campo', descripcion: 'Interés real por la naturaleza, la producción agrícola y el trabajo al aire libre (no le teme a embarrarse las botas).' },
+      { emoji: '🔬', titulo: 'Curiosidad científica', descripcion: 'Afinidad básica por entender cómo funcionan las plantas, el suelo y los microorganismos (biología y química básica).' },
       { emoji: '💡', titulo: 'Ganas de innovar', descripcion: 'Interés por aprender a usar tecnologías o métodos nuevos para mejorar los cultivos de la región.' },
     ],
     facilidades: [
@@ -17,11 +17,6 @@ const PERFIL_INGRESO_INFO = {
       'Nivelar y fortalecer desde el inicio las habilidades en lectura crítica y análisis de datos.',
       'Recibir curso de nivelación de inglés.',
     ],
-    perfilEgresoTexto: `El egresado del Programa de Ingeniería Agronómica de la Universidad Nacional del Catatumbo será un profesional integral, ético y crítico, competente para comprender, crear, gestionar y transformar los sistemas productivos agrícolas mediante la aplicación de conocimientos agronómicos, ambientales y socioterritoriales, con enfoque de sostenibilidad, responsabilidad social, innovación y pertinencia territorial.
-
-Estará en capacidad de diseñar, implementar y evaluar estrategias, proyectos y procesos contextualizados, orientados al fortalecimiento de la producción agrícola, la seguridad alimentaria, la adaptación al cambio climático y el uso sostenible de los recursos naturales.
-
-Se caracterizará por su compromiso con el desarrollo regional, la construcción de paz, la equidad territorial, el reconocimiento de la diversidad cultural y la protección del ambiente, articulando el conocimiento científico con los saberes locales para responder de manera pertinente a las necesidades y desafíos del contexto.`,
   },
   administracion: {
     caracteristicas: [
@@ -36,11 +31,6 @@ Se caracterizará por su compromiso con el desarrollo regional, la construcción
       'Implementar horarios flexibles o tutorías de apoyo para que quienes ya tienen un emprendimiento o trabajan en la región no se vean obligados a desertar.',
       'Recibir curso de nivelación de inglés.',
     ],
-    perfilEgresoTexto: `El egresado del programa de Administración de Empresas de la Universidad Nacional del Catatumbo será un profesional integral, ético y crítico, competente para comprender, gestionar y transformar organizaciones públicas, privadas, solidarias y comunitarias, mediante el ejercicio de los procesos administrativos y la gestión estratégica de recursos, con enfoque de sostenibilidad, responsabilidad social y pertinencia territorial.
-
-Estará en capacidad de liderar procesos de emprendimiento, innovación, fortalecimiento empresarial y desarrollo organizacional, aportando al desarrollo económico, social y ambiental del Catatumbo y de otros contextos rurales y de frontera.
-
-Se caracterizará por su compromiso con la construcción de paz, la equidad territorial, el reconocimiento de la diversidad cultural, la ciudadanía y la transformación social, articulando conocimientos disciplinares con saberes locales para responder de manera pertinente a las realidades y desafíos del territorio.`,
   },
   trabajo_social: {
     caracteristicas: [
@@ -55,15 +45,38 @@ Se caracterizará por su compromiso con la construcción de paz, la equidad terr
       'Realizar prácticas de observación comunitaria tempranas para asegurar que su interés por las poblaciones vulnerables se conecte rápidamente con el ejercicio profesional.',
       'Recibir curso de nivelación de inglés.',
     ],
-    perfilEgresoTexto: `El egresado del Programa de Trabajo Social de la Universidad Nacional del Catatumbo será un profesional integral, ético y crítico, competente para comprender, analizar e intervenir las complejas realidades sociales mediante la aplicación de conocimientos disciplinares, enfoques territoriales, diferenciales, interculturales, de derechos humanos y de justicia social, con pertinencia en contextos rurales, de frontera, multiculturales y de construcción de paz.
-
-Contribuirá al desarrollo social, económico, ambiental y cultural del Catatumbo mediante la formulación de estrategias contextualizadas que favorezcan la cohesión social, la participación ciudadana, la economía social y solidaria, la resiliencia comunitaria, la construcción de paz y el desarrollo territorial sostenible.
-
-Se caracterizará por su compromiso con la dignidad humana, la justicia social, la construcción de paz, la equidad territorial, la democracia y el reconocimiento de la diversidad cultural, articulando el conocimiento científico con los saberes comunitarios, ancestrales y territoriales.`,
   },
 }
 
-// ── Subpaso 1: Lectura interactiva ───────────────────────────────────────────
+// ── Fotos de los talleres de socialización, repartidas en el flujo ──────────
+const FOTOS_TALLERES = [
+  { src: '/taller-jovenes-cartelera.jpg',     alt: 'Estudiantes construyendo una cartelera participativa sobre el territorio' },
+  { src: '/taller-salon-completo.jpg',        alt: 'Socialización del programa Catatumbo con estudiantes' },
+  { src: '/taller-mesa-comunidad.jpg',        alt: 'Mesa de trabajo con líderes comunitarios del territorio' },
+  { src: '/taller-mesa-funcionarios.jpg',     alt: 'Mesa de trabajo con priorización de ideas en notas adhesivas' },
+  { src: '/taller-mesa-casa-justicia.jpg',    alt: 'Socialización con la Casa de Justicia y Convivencia Ciudadana' },
+]
+
+function FotoTaller({ index, caption }) {
+  const foto = FOTOS_TALLERES[index % FOTOS_TALLERES.length]
+  return (
+    <div className="rounded-2xl overflow-hidden mb-5" style={{ border: '1px solid rgba(255,255,255,0.12)' }}>
+      <img
+        src={foto.src}
+        alt={foto.alt}
+        loading="lazy"
+        className="w-full object-cover h-40 sm:h-48 md:h-56 lg:h-64"
+      />
+      {caption && (
+        <div className="px-4 py-2.5" style={{ background: 'rgba(0,0,0,0.3)' }}>
+          <p className="font-body text-xs text-white/60 leading-snug">{caption}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Subpaso 1: Lectura interactiva del perfil de ingreso ─────────────────────
 function PerfilIngresoLectura({ programaId, prog, onEntendido, T }) {
   const info = PERFIL_INGRESO_INFO[programaId]
   const [visible, setVisible] = useState(0)
@@ -127,7 +140,7 @@ function PerfilIngresoLectura({ programaId, prog, onEntendido, T }) {
   )
 }
 
-// ── Subpaso 2: Ordenar facilidades ───────────────────────────────────────────
+// ── Subpaso 2: Ordenar facilidades al ingreso ────────────────────────────────
 function OrdenarFacilidades({ programaId, prog, onGuardar, guardando, T }) {
   const info = PERFIL_INGRESO_INFO[programaId]
   const [orden, setOrden] = useState(info?.facilidades ?? [])
@@ -196,10 +209,106 @@ function OrdenarFacilidades({ programaId, prog, onGuardar, guardando, T }) {
   )
 }
 
-// ── Subpaso 4: ¿Cómo vamos? ──────────────────────────────────────────────────
+// ── Pantalla genérica de priorización de egreso (reutilizada para parte A y B) ──
+// `categoria` indica qué subconjunto mostrar ('saber' | 'ser'), pero NUNCA se muestra ese texto en pantalla.
+function OrdenarPerfilEgresoParte({ prog, categoria, tituloVisible, subtituloVisible, fotoIndex, fotoCaption, onSiguiente, guardando, T, esUltimaParte, comentario, onComentarioChange }) {
+  const itemsCategoria = (prog.perfilEgreso || []).filter(i => i.categoria === categoria).map(i => i.texto)
+  const [opciones,    setOpciones]    = useState(itemsCategoria)
+  const [prioridades, setPrioridades] = useState([])
+  const [dragging,    setDragging]    = useState(null)
+  const [fromCol,     setFromCol]     = useState(null)
+
+  const startDrag = (item, col) => { setDragging(item); setFromCol(col) }
+  const dropEn = (col) => {
+    if (!dragging || fromCol === col) { setDragging(null); return }
+    if (col === 'pri') {
+      setOpciones(p => p.filter(i => i !== dragging))
+      setPrioridades(p => [...p, dragging])
+    } else {
+      setPrioridades(p => p.filter(i => i !== dragging))
+      setOpciones(p => [...p, dragging])
+    }
+    setDragging(null); setFromCol(null)
+  }
+  const moverA = (item, destino) => {
+    if (destino === 'pri') {
+      setOpciones(p => p.filter(i => i !== item))
+      setPrioridades(p => [...p, item])
+    } else {
+      setPrioridades(p => p.filter(i => i !== item))
+      setOpciones(p => [...p, item])
+    }
+  }
+
+  const Chip = ({ item, col }) => (
+    <div draggable onDragStart={() => startDrag(item, col)} onDragEnd={() => setDragging(null)}
+      onClick={() => moverA(item, col === 'ops' ? 'pri' : 'ops')}
+      className="rounded-xl px-3 py-2.5 text-xs font-body border cursor-pointer active:scale-95 transition-all duration-150 select-none leading-snug"
+      style={{ opacity: dragging === item ? 0.4 : 1, background: 'rgba(255,255,255,0.08)', borderColor: 'rgba(255,255,255,0.12)', color: '#ffffff', fontWeight: 500 }}>
+      {item}
+    </div>
+  )
+
+  return (
+    <div className="space-y-5 animate-fade-up">
+      <div>
+        <div style={T.badge} className="mb-4">
+          <span>{prog.emoji}</span>
+          <span className="font-body text-sm" style={T.sub}>Perfil de Egreso</span>
+        </div>
+        <h2 className="font-display text-2xl font-black mb-2" style={T.principal}>
+          {tituloVisible} <span className="text-green-400">{prog.nombre}</span>
+        </h2>
+        <p className="font-body text-sm leading-relaxed" style={T.sub}>{subtituloVisible}</p>
+      </div>
+
+      {fotoIndex !== undefined && <FotoTaller index={fotoIndex} caption={fotoCaption} />}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div onDragOver={e => e.preventDefault()} onDrop={() => dropEn('ops')}
+          className="min-h-40 rounded-2xl border-2 border-dashed p-3"
+          style={{ borderColor: 'rgba(255,255,255,0.15)', background: 'rgba(0,0,0,0.2)' }}>
+          <p className="text-xs font-display font-bold mb-1 uppercase tracking-wide text-white">OPCIONES</p>
+          <p className="text-xs mb-2 text-white/40">toca para priorizar</p>
+          <div className="flex flex-col gap-1.5">
+            {opciones.map(i => <Chip key={i} item={i} col="ops" />)}
+            {opciones.length === 0 && <p className="text-xs py-3 w-full text-center text-white/30">Todas priorizadas ✓</p>}
+          </div>
+        </div>
+        <div onDragOver={e => e.preventDefault()} onDrop={() => dropEn('pri')}
+          className="min-h-40 rounded-2xl border-2 border-dashed p-3"
+          style={{ borderColor: 'rgba(74,222,128,0.3)', background: 'rgba(74,222,128,0.04)' }}>
+          <p className="text-xs font-display font-bold mb-2 uppercase tracking-wide text-white">MIS PRIORIDADES</p>
+          <div className="flex flex-col gap-1.5">
+            {prioridades.map((i, idx) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-xs font-display font-black w-4 text-center flex-shrink-0 text-white/50 mt-2.5">{idx + 1}</span>
+                <div className="flex-1"><Chip item={i} col="pri" /></div>
+              </div>
+            ))}
+            {prioridades.length === 0 && <p className="text-xs text-center py-4 leading-snug text-white/30">← Toca o arrastra para priorizar</p>}
+          </div>
+        </div>
+      </div>
+
+      {esUltimaParte && (
+        <div className="rounded-2xl p-5" style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+          <p className="font-display font-bold text-sm mb-3 text-white">✏️ {prog.preguntaAbiertaEgreso}</p>
+          <textarea rows={4} value={comentario} onChange={e => onComentarioChange(e.target.value)}
+            placeholder="Tu aporte es muy valioso para el territorio..." style={T.textarea} />
+        </div>
+      )}
+
+      <button onClick={() => onSiguiente(prioridades)} disabled={guardando}
+        className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all" style={T.btnPrincipal}>
+        {guardando ? 'Guardando...' : 'Siguiente →'}
+      </button>
+    </div>
+  )
+}
+
+// ── ¿Cómo vamos? + perfil egreso completo ─────────────────────────────────────
 function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
-  const info = PERFIL_INGRESO_INFO[programaId]
-  // FIX: datos.programa (no datos.programme)
   const [datos, setDatos] = useState({ municipio: '—', programa: '—', total: 0 })
   const [mostrarPerfil, setMostrarPerfil] = useState(false)
 
@@ -214,7 +323,6 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
         const PROG_LABEL = { trabajo_social: 'Trabajo Social', agronomia: 'Ing. Agronómica', administracion: 'Adm. Empresas' }
         const cProg = {}
         progs?.forEach(p => { if (p.programa) cProg[p.programa] = (cProg[p.programa] || 0) + 1 })
-        // FIX: programa (no programme)
         const topProg = PROG_LABEL[Object.entries(cProg).sort((a,b) => b[1]-a[1])[0]?.[0]] || '—'
         setDatos({ municipio: topMun, programa: topProg, total: parts.length })
       }
@@ -223,7 +331,6 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
 
   useEffect(() => {
     cargar()
-    // FIX: programaId (no programmeId)
     const canal = supabase.channel('como-vamos-' + programaId)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'participantes' }, cargar)
       .subscribe()
@@ -233,36 +340,17 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
   return (
     <div className="space-y-5 animate-fade-up">
       <div className="text-center">
-        {/* Indicador EN VIVO */}
-        <div
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4"
-          style={{
-            background: 'rgba(74,222,128,0.08)',
-            border: '1px solid rgba(74,222,128,0.25)',
-          }}
-        >
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-green-400"></span>
-          </span>
-          <span className="font-display font-bold text-xs tracking-widest text-green-400">
-            EN VIVO
-          </span>
-        </div>
-        <span className="text-5xl block mb-3">📊</span>
-        <h2 className="font-display text-2xl font-black text-white mb-2">
-          ¿Cómo vamos?
-        </h2>
-        <p className="font-body text-sm" style={T.muted}>
-          Resultados actualizados en tiempo real por la comunidad
-        </p>
+        <span className="text-4xl block mb-3">📊</span>
+        <h2 className="font-display text-2xl font-black text-white mb-1">¿Cómo vamos?</h2>
+        <p className="font-body text-sm" style={T.muted}>Lo que está construyendo la comunidad</p>
       </div>
+
+      <FotoTaller index={1} caption="Estudiantes y comunidad participando en los talleres de socialización del Catatumbo." />
 
       <div className="grid grid-cols-1 gap-3">
         {[
           { label: '👥 Participantes completados', value: datos.total },
           { label: '📍 Municipio más participativo', value: datos.municipio },
-          // FIX: datos.programa (no datos.programme)
           { label: '🎓 Programa de mayor interés', value: datos.programa },
         ].map((d, i) => (
           <div key={i} className="rounded-2xl p-5 text-center"
@@ -272,29 +360,6 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
           </div>
         ))}
       </div>
-
-      <div
-        className="rounded-2xl p-4 text-center mb-4"
-        style={{
-          background: 'rgba(74,222,128,0.08)',
-          border: '1px solid rgba(74,222,128,0.18)',
-          backdropFilter: 'blur(16px)',
-        }}
-      >
-        <div className="flex items-center justify-center gap-2 mb-1">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse"></div>
-
-          <span className="font-display font-bold text-green-400 text-sm">
-            Participación ciudadana activa
-          </span>
-        </div>
-
-        <p className="font-body text-xs text-white/60">
-          Cada nueva respuesta actualiza automáticamente este panel.
-        </p>
-      </div>
-
-
       <div className="rounded-2xl overflow-hidden"
         style={{ background: 'rgba(15,23,42,0.45)', border: '1px solid rgba(255,255,255,0.1)' }}>
         <button onClick={() => setMostrarPerfil(m => !m)}
@@ -311,7 +376,7 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
         {mostrarPerfil && (
           <div className="px-5 py-4 bg-black/20">
             <p className="font-body text-sm leading-relaxed whitespace-pre-line" style={T.sub}>
-              {info?.perfilEgresoTexto}
+              {prog.perfilEgresoTexto}
             </p>
           </div>
         )}
@@ -319,23 +384,18 @@ function ComoVamos({ programaId, prog, onContinuar, T, siguienteLabel }) {
       <button onClick={onContinuar} className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all" style={T.btnPrincipal}>
         {siguienteLabel}
       </button>
-      
-      <div className="text-center">
-        <p className="font-body text-xs text-white/40">
-          🔄 Actualización automática de resultados en tiempo real
-        </p>
-      </div>
     </div>
   )
 }
 
-// ── Subpaso 5: Cultura Barí ───────────────────────────────────────────────────
+// ── Lenguas (importancia) + Cultura Barí ──────────────────────────────────────
 function SeccionLenguas({ onGuardar, txtMuted, T }) {
-  const [conocimientoBari, setConocimientoBari] = useState(5)
-  const [deseaConocer,     setDeseaConocer]     = useState(null)
-  const [comoConocer,      setComoConocer]      = useState('')
+  const [importanciaLenguas, setImportanciaLenguas] = useState('')
+  const [conocimientoBari,   setConocimientoBari]   = useState(5)
+  const [deseaConocer,       setDeseaConocer]       = useState(null)
+  const [comoConocer,        setComoConocer]        = useState('')
 
-  const puedeGuardar = deseaConocer !== null
+  const puedeGuardar = importanciaLenguas !== '' && deseaConocer !== null
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -344,6 +404,32 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
         <div>
           <p className="font-display font-bold text-white text-base">Lenguas e Interculturalidad</p>
           <p className="font-body text-xs" style={txtMuted}>Una reflexión sobre la formación universitaria en el Catatumbo</p>
+        </div>
+      </div>
+
+      <FotoTaller index={2} caption="Mesas de trabajo con líderes comunitarios y autoridades del territorio." />
+
+      {/* Pregunta de importancia de lengua */}
+      <div className="rounded-2xl p-5"
+        style={{ background: 'rgba(15,23,42,0.45)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+        <p className="font-display font-bold text-white text-sm mb-3 leading-snug">
+          ¿Qué tan importante considera que los estudiantes y futuros profesionales de la Universidad Nacional del Catatumbo desarrollen competencias en una segunda lengua o en lenguas propias del territorio (como la lengua del pueblo Barí) para su formación y ejercicio profesional?
+        </p>
+        <p className="font-body text-xs mb-4" style={txtMuted}>Seleccione una opción</p>
+        <div className="space-y-2">
+          {['Muy importante', 'Importante', 'Medianamente importante', 'Poco importante', 'Nada importante'].map(op => (
+            <button key={op} onClick={() => setImportanciaLenguas(op)}
+              className="w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 flex items-center gap-3"
+              style={importanciaLenguas === op
+                ? { background: 'rgba(74,222,128,0.22)', border: '2px solid rgba(74,222,128,0.6)', color: '#ffffff' }
+                : { background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.8)' }}>
+              <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                style={{ borderColor: importanciaLenguas === op ? '#4ade80' : 'rgba(255,255,255,0.4)' }}>
+                {importanciaLenguas === op && <div className="w-2 h-2 rounded-full bg-green-400" />}
+              </div>
+              <span className="font-body text-sm leading-snug">{op}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -404,13 +490,13 @@ function SeccionLenguas({ onGuardar, txtMuted, T }) {
       </div>
 
       <button
-        onClick={() => onGuardar({ importanciaLenguas: 'Sin especificar', conocimientoBari, deseaConocer, comoConocer })}
+        onClick={() => onGuardar({ importanciaLenguas, conocimientoBari, deseaConocer, comoConocer })}
         disabled={!puedeGuardar}
         className="w-full py-4 rounded-2xl font-display font-bold text-lg text-white transition-all"
         style={puedeGuardar
           ? { background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)' }
           : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.3)', cursor: 'not-allowed' }}>
-        {puedeGuardar ? 'Continuar →' : 'Responde para continuar'}
+        {puedeGuardar ? 'Continuar →' : 'Responde todas las preguntas para continuar'}
       </button>
     </div>
   )
@@ -428,14 +514,16 @@ function Card({ children }) {
 // ── Componente principal ──────────────────────────────────────────────────────
 export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso, onGuardarEgreso, guardando }) {
   const [progIdx,  setProgIdx]  = useState(0)
-  // 0=socialización 1=ingreso lectura 2=facilidades 3=pregunta rasgo egreso 4=cómo vamos 5=lenguas
+  // 0=socialización 1=ingreso lectura 2=facilidades 3=egreso parteA 4=egreso parteB 5=cómo vamos 6=lenguas
   const [subpaso,  setSubpaso]  = useState(0)
   const [errorMsg, setErrorMsg] = useState(null)
 
   const [imaginaPrograma, setImaginaPrograma] = useState('')
   const [comEgreso,       setComEgreso]       = useState('')
 
-  const egresoGuardadoRef = useRef(null)
+  // Acumula prioridades de ambas partes del egreso antes de guardar en BD
+  const egresoAcumuladoRef = useRef({ parteA: [], parteB: [] })
+  const egresoGuardadoRef  = useRef(null)
 
   const programaId = programasOrden[progIdx]
   const prog       = PROGRAMAS.find(p => p.id === programaId)
@@ -444,6 +532,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
   const resetSubpaso = () => {
     setSubpaso(0); setErrorMsg(null)
     setImaginaPrograma(''); setComEgreso('')
+    egresoAcumuladoRef.current = { parteA: [], parteB: [] }
     egresoGuardadoRef.current = null
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -464,14 +553,24 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
     } catch (e) { setErrorMsg('Error al guardar. Intenta de nuevo.') }
   }
 
-  // FIX: subpaso 3 es solo la pregunta de rasgo — sin drag & drop, sin prioridades
-  const handleGuardarEgreso = async () => {
-    // prioridades vacías — el drag & drop de egreso fue eliminado
-    egresoGuardadoRef.current = { programa: programaId, prioridades: [], comentario: comEgreso }
+  // Parte A del egreso (categoría 'saber') → guarda en memoria y avanza a parte B
+  const handleSiguienteParteA = (prioridadesSaber) => {
+    egresoAcumuladoRef.current.parteA = prioridadesSaber.map((c, i) => ({ competencia: c, orden: i + 1, categoria: 'saber' }))
     ir(4)
   }
 
-  const handleDespuesComoVamos = () => ir(5)
+  // Parte B del egreso (categoría 'ser') → guarda en memoria junto con comentario, avanza a ¿cómo vamos?
+  const handleSiguienteParteB = (prioridadesSer) => {
+    egresoAcumuladoRef.current.parteB = prioridadesSer.map((c, i) => ({ competencia: c, orden: i + 1, categoria: 'ser' }))
+    egresoGuardadoRef.current = {
+      programa: programaId,
+      prioridades: [...egresoAcumuladoRef.current.parteA, ...egresoAcumuladoRef.current.parteB],
+      comentario: comEgreso,
+    }
+    ir(5)
+  }
+
+  const handleDespuesComoVamos = () => ir(6)
 
   const handleGuardarLenguas = async (datosLenguas) => {
     if (!egresoGuardadoRef.current) return
@@ -506,7 +605,7 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
     badge:        { background: 'rgba(0,0,0,0.3)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 999, padding: '6px 16px', display: 'inline-flex', alignItems: 'center', gap: 8 },
   }
 
-  const ETIQUETAS = ['Conociendo el programa', 'Perfil de ingreso', 'Facilidades', 'Perfil de egreso', '¿Cómo vamos?', 'Lenguas']
+  const ETIQUETAS = ['Conociendo el programa', 'Perfil de ingreso', 'Facilidades', 'Perfil de egreso (1/2)', 'Perfil de egreso (2/2)', '¿Cómo vamos?', 'Lenguas']
 
   return (
     <div className="min-h-screen transition-all duration-700" style={{ background: prog.gradient }}>
@@ -541,6 +640,9 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
                 <h2 className="font-display text-3xl font-black mb-2" style={T.principal}>{prog.nombre}</h2>
                 <p className="font-body text-base leading-relaxed" style={T.sub}>{prog.descripcion}</p>
               </div>
+
+              <FotoTaller index={0} caption="Jóvenes del Catatumbo construyendo colectivamente su visión del territorio." />
+
               <Card>
                 <p className="text-xs font-display font-bold uppercase tracking-widest mb-3" style={T.muted}>¿Qué aporta al Catatumbo?</p>
                 {prog.beneficios.map((b, i) => (
@@ -575,55 +677,56 @@ export default function SocializacionYPerfil({ programasOrden, onGuardarIngreso,
             <OrdenarFacilidades programaId={programaId} prog={prog} onGuardar={handleGuardarFacilidades} guardando={guardando} T={T} />
           )}
 
-          {/* S3: Pregunta rasgo especial egreso — SIN drag & drop */}
+          {/* S3: Perfil de egreso — PARTE A (categoría 'saber', sin mostrar la etiqueta) */}
           {subpaso === 3 && (
-            <div className="space-y-5 animate-fade-up">
-              <div>
-                <div style={T.badge} className="mb-4">
-                  <span>{prog.emoji}</span>
-                  <span className="font-body text-sm" style={T.sub}>Perfil de Egreso</span>
-                </div>
-                <h2 className="font-display text-2xl font-black mb-3" style={T.principal}>
-                  ¿Qué rasgo o característica especial considera que debería tener un profesional de{' '}
-                  <span className="text-green-400">{prog.nombre}</span>{' '}
-                  de la Universidad Nacional del Catatumbo?
-                </h2>
-                <p className="font-body text-sm leading-relaxed" style={T.sub}>
-                  Comparte libremente tu perspectiva sobre lo que distinguiría a este profesional en el territorio.
-                </p>
-              </div>
-              <Card>
-                <textarea rows={5} value={comEgreso} onChange={e => setComEgreso(e.target.value)}
-                  placeholder="Describe los conocimientos, capacidades, valores o actitudes que considera más importantes..."
-                  style={T.textarea} />
-              </Card>
-              <div className="flex gap-3">
-                <button onClick={() => ir(2)} style={T.btnVolver} className="flex-1">← Volver</button>
-                <button onClick={handleGuardarEgreso} disabled={guardando} style={T.btnPrincipal} className="flex-1">
-                  {guardando ? 'Guardando...' : 'Siguiente →'}
-                </button>
-              </div>
-            </div>
+            <OrdenarPerfilEgresoParte
+              prog={prog}
+              categoria="saber"
+              tituloVisible="¿Qué debería poder comprender y analizar un profesional de"
+              subtituloVisible="Toca o arrastra las afirmaciones hacia 'Mis Prioridades' para ordenarlas según su importancia."
+              fotoIndex={3}
+              fotoCaption="Priorización colectiva de ideas durante las jornadas de socialización."
+              onSiguiente={handleSiguienteParteA}
+              guardando={guardando}
+              T={T}
+              esUltimaParte={false}
+            />
           )}
 
-          {/* S4: ¿Cómo vamos? */}
+          {/* S4: Perfil de egreso — PARTE B (categoría 'ser', sin mostrar la etiqueta) + pregunta abierta */}
           {subpaso === 4 && (
+            <OrdenarPerfilEgresoParte
+              prog={prog}
+              categoria="ser"
+              tituloVisible="¿Qué valores y actitudes debería tener un profesional de"
+              subtituloVisible="Ahora prioriza estas afirmaciones según su importancia para el territorio."
+              onSiguiente={handleSiguienteParteB}
+              guardando={guardando}
+              T={T}
+              esUltimaParte={true}
+              comentario={comEgreso}
+              onComentarioChange={setComEgreso}
+            />
+          )}
+
+          {/* S5: ¿Cómo vamos? */}
+          {subpaso === 5 && (
             <ComoVamos
               programaId={programaId}
               prog={prog}
               onContinuar={handleDespuesComoVamos}
               T={T}
-              siguienteLabel={esUltimo ? 'Ir a la reflexión final →' : 'Siguiente →'}
+              siguienteLabel={esUltimo ? 'Ir a la reflexión final →' : 'Siguiente programa →'}
             />
           )}
 
-          {/* S5: Lenguas / cultura Barí */}
-          {subpaso === 5 && (
+          {/* S6: Lenguas / cultura Barí */}
+          {subpaso === 6 && (
             <SeccionLenguas onGuardar={handleGuardarLenguas} txtMuted={T.muted} T={T} />
           )}
 
           {/* Botón atrás — solo en subpasos donde tiene sentido */}
-          {[2, 3, 5].includes(subpaso) && (
+          {[2, 3, 4, 6].includes(subpaso) && (
             <div className="mt-5 pt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }}>
               <button onClick={() => ir(subpaso - 1)} style={T.btnVolver}>← Atrás</button>
             </div>

@@ -8,7 +8,7 @@ const CAPSULAS = [
     videoId: null,
     color: 'linear-gradient(160deg, rgb(22,101,52) 0%, rgb(34,139,34) 60%, rgb(16,185,129) 100%)',
     emoji: '🌿',
-    fotoActividad: '/territorio-rio2.jpg',
+    fotoActividad: '/img_6.jpg',
     comentariosTaller: [
       "«Necesitamos carreras que se queden en la región para trabajar nuestra tierra»",
       "«La distancia y los costos hacían imposible que nuestros jóvenes estudiaran»"

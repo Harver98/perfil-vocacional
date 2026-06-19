@@ -64,7 +64,7 @@ export default function ProgramasOrden({ onContinuar }) {
         <div className="text-center mb-8">
           <span className="text-5xl block mb-3">🎯</span>
           <h2 className="font-display text-2xl font-black text-white mb-3 balance leading-snug">
-            Ordena los siguientes programas de la Universidad Nacional del Catatumbo según el nivel de interés que te generan.
+            ¿Usted, algún familiar o conocido estaría interesado en cuál de los siguientes programas? Ordénelos en orden de importancia a partir de la siguiente escala continua…
           </h2>
         </div>
 
