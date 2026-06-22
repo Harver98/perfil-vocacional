@@ -598,87 +598,90 @@ export default function Dashboard() {
     })
 
     // Hoja 2: Respuestas Abiertas (Programa Académico | Pregunta | Respuesta | Fecha)
-    const respuestasAbiertas = []
-    rawData.participantes.forEach(p => {
-      const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
-      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-      const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+const respuestasAbiertas = []
+rawData.participantes.forEach(p => {
+  const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
+  const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+  const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+  const idParticipante = p.id
+  const tipoActor = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
 
-      // Visión territorial — vision_territorial se repite en cada fila de facilidad ordenada
-      // (5 facilidades = 5 filas con el mismo texto), tomamos solo una representativa
-      // por combinación participante + programa para no duplicar la respuesta en el Excel.
-      const ingresoUnicos = new Map()
-      ;(rawData.perfilIngreso || [])
-        .filter(i => i.participante_id === p.id && i.vision_territorial)
-        .forEach(i => {
-          const key = `${i.participante_id}__${i.programa}`
-          if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
-        })
-      ingresoUnicos.forEach(i => {
-        respuestasAbiertas.push({
-          'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
-          'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
-          'Respuesta':          i.vision_territorial,
-          'Fecha de Registro':  fecha,
-        })
-      })
-
-      // Rasgo especial egresado (perfil_egreso.comentario_libre) — el mismo comentario se repite
-      // en cada fila de competencia priorizada (saber/ser), así que tomamos solo una representativa
-      // por combinación participante + programa para no duplicar la respuesta en el Excel.
-      const egresoUnicos = new Map()
-      ;(rawData.perfilEgreso || [])
-        .filter(e => e.participante_id === p.id && e.comentario_libre)
-        .forEach(e => {
-          const key = `${e.participante_id}__${e.programa}`
-          if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
-        })
-      egresoUnicos.forEach(e => {
-        respuestasAbiertas.push({
-          'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
-          'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
-          'Respuesta':          e.comentario_libre,
-          'Fecha de Registro':  fecha,
-        })
-      })
-
-      // Mensaje final del manifiesto
-      const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-      if (manifiestoFila?.comentario_final) {
-        respuestasAbiertas.push({
-          'Programa Académico': progLabel,
-          'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
-          'Respuesta':          manifiestoFila.comentario_final,
-          'Fecha de Registro':  fecha,
-        })
-      }
-
-      // Cómo conocer cultura Barí
-      if (p.como_conocer_bari) {
-        respuestasAbiertas.push({
-          'Programa Académico': progLabel,
-          'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
-          'Respuesta':          p.como_conocer_bari,
-          'Fecha de Registro':  fecha,
-        })
-      }
-
-      // Empleabilidad — dónde podrían trabajar los egresados (guardada en manifiesto, una columna por programa)
-      const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-      if (manifiestoEmp) {
-        const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
-        const campoEmp = EMP_CAMPO[programa1]
-        const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
-        if (valorEmp) {
-          respuestasAbiertas.push({
-            'Programa Académico': progLabel,
-            'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
-            'Respuesta':          valorEmp,
-            'Fecha de Registro':  fecha,
-          })
-        }
-      }
+  const ingresoUnicos = new Map()
+  ;(rawData.perfilIngreso || [])
+    .filter(i => i.participante_id === p.id && i.vision_territorial)
+    .forEach(i => {
+      const key = `${i.participante_id}__${i.programa}`
+      if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
     })
+  ingresoUnicos.forEach(i => {
+    respuestasAbiertas.push({
+      'ID Participante':    idParticipante,
+      'Tipo de Actor':      tipoActor,
+      'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
+      'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
+      'Respuesta':          i.vision_territorial,
+      'Fecha de Registro':  fecha,
+    })
+  })
+
+  const egresoUnicos = new Map()
+  ;(rawData.perfilEgreso || [])
+    .filter(e => e.participante_id === p.id && e.comentario_libre)
+    .forEach(e => {
+      const key = `${e.participante_id}__${e.programa}`
+      if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+    })
+  egresoUnicos.forEach(e => {
+    respuestasAbiertas.push({
+      'ID Participante':    idParticipante,
+      'Tipo de Actor':      tipoActor,
+      'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
+      'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
+      'Respuesta':          e.comentario_libre,
+      'Fecha de Registro':  fecha,
+    })
+  })
+
+  const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+  if (manifiestoFila?.comentario_final) {
+    respuestasAbiertas.push({
+      'ID Participante':    idParticipante,
+      'Tipo de Actor':      tipoActor,
+      'Programa Académico': progLabel,
+      'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
+      'Respuesta':          manifiestoFila.comentario_final,
+      'Fecha de Registro':  fecha,
+    })
+  }
+
+  if (p.como_conocer_bari) {
+    respuestasAbiertas.push({
+      'ID Participante':    idParticipante,
+      'Tipo de Actor':      tipoActor,
+      'Programa Académico': progLabel,
+      'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
+      'Respuesta':          p.como_conocer_bari,
+      'Fecha de Registro':  fecha,
+    })
+  }
+
+  const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+  if (manifiestoEmp) {
+    const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
+    const campoEmp = EMP_CAMPO[programa1]
+    const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
+    if (valorEmp) {
+      respuestasAbiertas.push({
+        'ID Participante':    idParticipante,
+        'Tipo de Actor':      tipoActor,
+        'Programa Académico': progLabel,
+        'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
+        'Respuesta':          valorEmp,
+        'Fecha de Registro':  fecha,
+      })
+    }
+  }
+})
 
     // Hoja 3: Resumen Respuestas Abiertas (frecuencia de respuestas repetidas, normalizando texto)
     const normalizar = (txt) => (txt || '').trim().toLowerCase().replace(/\s+/g, ' ')
