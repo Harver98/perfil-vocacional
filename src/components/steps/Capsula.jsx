@@ -19,7 +19,7 @@ const CAPSULAS = [
     titulo: '¿Qué programas se están proponiendo?',
     subtitulo: 'Tres caminos para transformar el territorio',
     descripcion: 'En este video presentamos los tres programas con que dará inicio la Universidad Nacional del Catatumbo.',
-    videoId: 'YJ9aW-chNCw',
+    videoId: 'XBd3tfpQF-0',
     color: 'linear-gradient(160deg, rgb(91,45,142) 0%, rgb(123,63,168) 60%, rgb(155,79,192) 100%)',
     emoji: '🎓',
     trivia: {
