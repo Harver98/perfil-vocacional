@@ -731,8 +731,6 @@ rawData.participantes.forEach(p => {
 
     exportarExcelMultihoja([
       { nombre: 'Sábana Completa',             datos: sabana },
-      { nombre: 'Respuestas Abiertas',         datos: respuestasAbiertas },
-      { nombre: 'Resumen Respuestas Abiertas', datos: resumenAbiertas },
       { nombre: 'Top Temas Investigación',     datos: lineasResumen },
       { nombre: 'Top Materias Complementarias',datos: electivasResumen },
       { nombre: 'Ranking Facilidades Ingreso', datos: facilidadesResumen },
