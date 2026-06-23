@@ -96,7 +96,7 @@ function SinDatos({ mensaje }) {
   )
 }
 
-function ExportMenu({ onCSV, onExcel, onJSON }) {
+function ExportMenu({ onCSV, onExcel, onCSVAbiertas }) {
   const [open, setOpen] = useState(false)
 
   // Cierra el menú al hacer clic fuera
@@ -118,11 +118,10 @@ function ExportMenu({ onCSV, onExcel, onJSON }) {
       {open && (
         <div className="absolute right-0 top-9 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 min-w-48">
           {[
-            { icon: '📗', label: 'Excel completo (multi-hoja)', fn: onExcel },
-            { icon: '📊', label: 'CSV (sábana simple)',         fn: onCSV },
-            { icon: '📋', label: 'JSON completo',               fn: onJSON },
-            { icon: '🖨️', label: 'Imprimir',                    fn: () => window.print() },
-          ].map(op => (
+              { icon: '📗', label: 'Excel completo (multi-hoja)',      fn: onExcel },
+              { icon: '📊', label: 'CSV (sábana simple)',              fn: onCSV },
+              { icon: '📝', label: 'Exportar Respuestas Abiertas (CSV)', fn: onCSVAbiertas },
+            ].map(op => (
             <button key={op.label} onClick={() => { op.fn(); setOpen(false) }}
               className="w-full text-left px-4 py-2.5 text-sm font-body text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
               {op.icon} {op.label}
@@ -740,6 +739,97 @@ rawData.participantes.forEach(p => {
     ], 'observatorio_catatumbo_completo')
   }
 
+  const procesarExportacionCSVAbiertas = () => {
+  if (!rawData.participantes?.length) return
+
+  const respuestasAbiertas = []
+  rawData.participantes.forEach(p => {
+    const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
+    const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+    const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+    const idParticipante = p.id
+    const tipoActor = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
+
+    const ingresoUnicos = new Map()
+    ;(rawData.perfilIngreso || [])
+      .filter(i => i.participante_id === p.id && i.vision_territorial)
+      .forEach(i => {
+        const key = `${i.participante_id}__${i.programa}`
+        if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
+      })
+    ingresoUnicos.forEach(i => {
+      respuestasAbiertas.push({
+        'ID Participante':    idParticipante,
+        'Tipo de Actor':      tipoActor,
+        'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
+        'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
+        'Respuesta':          i.vision_territorial || '',
+        'Fecha de Registro':  fecha,
+      })
+    })
+
+    const egresoUnicos = new Map()
+    ;(rawData.perfilEgreso || [])
+      .filter(e => e.participante_id === p.id && e.comentario_libre)
+      .forEach(e => {
+        const key = `${e.participante_id}__${e.programa}`
+        if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+      })
+    egresoUnicos.forEach(e => {
+      respuestasAbiertas.push({
+        'ID Participante':    idParticipante,
+        'Tipo de Actor':      tipoActor,
+        'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
+        'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
+        'Respuesta':          e.comentario_libre || '',
+        'Fecha de Registro':  fecha,
+      })
+    })
+
+    const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+    if (manifiestoFila?.comentario_final) {
+      respuestasAbiertas.push({
+        'ID Participante':    idParticipante,
+        'Tipo de Actor':      tipoActor,
+        'Programa Académico': progLabel,
+        'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
+        'Respuesta':          manifiestoFila.comentario_final,
+        'Fecha de Registro':  fecha,
+      })
+    }
+
+    if (p.como_conocer_bari) {
+      respuestasAbiertas.push({
+        'ID Participante':    idParticipante,
+        'Tipo de Actor':      tipoActor,
+        'Programa Académico': progLabel,
+        'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
+        'Respuesta':          p.como_conocer_bari,
+        'Fecha de Registro':  fecha,
+      })
+    }
+
+    const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+    if (manifiestoEmp) {
+      const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
+      const campoEmp = EMP_CAMPO[programa1]
+      const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
+      if (valorEmp) {
+        respuestasAbiertas.push({
+          'ID Participante':    idParticipante,
+          'Tipo de Actor':      tipoActor,
+          'Programa Académico': progLabel,
+          'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
+          'Respuesta':          valorEmp,
+          'Fecha de Registro':  fecha,
+        })
+      }
+    }
+  })
+
+  exportarCSV(respuestasAbiertas, 'observatorio_catatumbo_respuestas_abiertas')
+}
+
   // ── Eliminación de registros ──────────────────────────────────────────────
   const eliminarRegistros = async (tipo) => {
     setEliminando(true); setMensajeElim(null)
@@ -803,7 +893,7 @@ rawData.participantes.forEach(p => {
             <ExportMenu
               onCSV={procesarExportacionCSV}
               onExcel={procesarExportacionExcel}
-              onJSON={() => exportarJSON(rawData, 'observatorio_catatumbo_full')}
+              onCSVAbiertas={procesarExportacionCSVAbiertas}
             />
             <button onClick={cargarDatos} className="text-xs bg-white/10 text-white border border-white/20 hover:bg-white/20 px-3 py-1.5 rounded-lg font-medium transition-colors">🔄 Actualizar</button>
             <button onClick={() => setModalEliminar('menu')} className="text-xs bg-red-700/40 text-red-100 hover:bg-red-700/60 px-3 py-1.5 rounded-lg transition-colors">🗑️ Depurar</button>
