@@ -30,6 +30,13 @@ const ACTOR_LABEL = {
   organizacion: 'Organización',
 }
 
+// ── Utilidad: truncar texto para celdas Excel (límite 32767 chars) ────────────
+const truncarCelda = (texto, max = 32000) => {
+  if (!texto) return ''
+  const str = String(texto)
+  return str.length > max ? str.slice(0, max) + '...[truncado]' : str
+}
+
 // ── Exportación ───────────────────────────────────────────────────────────────
 const exportarCSV = (datos, nombreArchivo) => {
   if (!datos?.length) return
@@ -49,21 +56,13 @@ const exportarCSV = (datos, nombreArchivo) => {
   URL.revokeObjectURL(url)
 }
 
-const exportarJSON = (datos, nombreArchivo) => {
-  const blob = new Blob([JSON.stringify(datos, null, 2)], { type: 'application/json' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = `${nombreArchivo}.json`; a.click()
-  URL.revokeObjectURL(url)
-}
-
 // Exporta un libro de Excel con múltiples hojas. `hojas` = [{ nombre, datos }]
 const exportarExcelMultihoja = (hojas, nombreArchivo) => {
   const wb = XLSX.utils.book_new()
   hojas.forEach(({ nombre, datos }) => {
     if (!datos?.length) return
     const ws = XLSX.utils.json_to_sheet(datos)
-    XLSX.utils.book_append_sheet(wb, ws, nombre.slice(0, 31)) // límite de Excel: 31 chars
+    XLSX.utils.book_append_sheet(wb, ws, nombre.slice(0, 31))
   })
   XLSX.writeFile(wb, `${nombreArchivo}.xlsx`)
 }
@@ -99,7 +98,6 @@ function SinDatos({ mensaje }) {
 function ExportMenu({ onCSV, onExcel, onCSVAbiertas }) {
   const [open, setOpen] = useState(false)
 
-  // Cierra el menú al hacer clic fuera
   useEffect(() => {
     if (!open) return
     const handler = () => setOpen(false)
@@ -118,10 +116,10 @@ function ExportMenu({ onCSV, onExcel, onCSVAbiertas }) {
       {open && (
         <div className="absolute right-0 top-9 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-30 min-w-48">
           {[
-              { icon: '📗', label: 'Excel completo (multi-hoja)',      fn: onExcel },
-              { icon: '📊', label: 'CSV (sábana simple)',              fn: onCSV },
-              { icon: '📝', label: 'Exportar Respuestas Abiertas (CSV)', fn: onCSVAbiertas },
-            ].map(op => (
+            { icon: '📗', label: 'Excel completo (multi-hoja)',       fn: onExcel },
+            { icon: '📊', label: 'CSV (sábana simple)',               fn: onCSV },
+            { icon: '📝', label: 'Exportar Respuestas Abiertas (CSV)', fn: onCSVAbiertas },
+          ].map(op => (
             <button key={op.label} onClick={() => { op.fn(); setOpen(false) }}
               className="w-full text-left px-4 py-2.5 text-sm font-body text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-colors">
               {op.icon} {op.label}
@@ -229,15 +227,15 @@ function ConfirmarTodo({ eliminando, onConfirmar, onVolver }) {
 
 // ── Dashboard Principal ───────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [autenticado,  setAutenticado]  = useState(false)
-  const [nombreAdmin,  setNombreAdmin]  = useState('')
-  const [vista,        setVista]        = useState(0)
-  const [cargando,     setCargando]     = useState(true)
-  const [rawData,      setRawData]      = useState({})
-  const [modalEliminar,setModalEliminar]= useState(null)
-  const [eliminando,   setEliminando]   = useState(false)
-  const [mensajeElim,  setMensajeElim]  = useState(null)
-  const [busqueda,     setBusqueda]     = useState('')
+  const [autenticado,   setAutenticado]  = useState(false)
+  const [nombreAdmin,   setNombreAdmin]  = useState('')
+  const [vista,         setVista]        = useState(0)
+  const [cargando,      setCargando]     = useState(true)
+  const [rawData,       setRawData]      = useState({})
+  const [modalEliminar, setModalEliminar]= useState(null)
+  const [eliminando,    setEliminando]   = useState(false)
+  const [mensajeElim,   setMensajeElim]  = useState(null)
+  const [busqueda,      setBusqueda]     = useState('')
 
   const [filtroMunicipio,  setFiltroMunicipio]  = useState('')
   const [filtroPrograma,   setFiltroPrograma]   = useState('')
@@ -317,11 +315,11 @@ export default function Dashboard() {
         if (!p.edad) return false
         const e = parseInt(p.edad, 10)
         if (isNaN(e)) return false
-        if (filtroEdad === '< 18'  && e >= 18)         return false
+        if (filtroEdad === '< 18'  && e >= 18)            return false
         if (filtroEdad === '18-25' && (e < 18 || e > 25)) return false
         if (filtroEdad === '26-35' && (e < 26 || e > 35)) return false
         if (filtroEdad === '36-45' && (e < 36 || e > 45)) return false
-        if (filtroEdad === '46+'   && e <= 45)         return false
+        if (filtroEdad === '46+'   && e <= 45)            return false
       }
       if (filtroPrograma) {
         const tiene = rawData.progOrden?.some(po => po.participante_id === p.id && po.programa === filtroPrograma && po.orden === 1)
@@ -339,9 +337,9 @@ export default function Dashboard() {
     const ingFiltrados  = (rawData.perfilIngreso || []).filter(i  => targetIds.has(i.participante_id))
     const egFiltrados   = (rawData.perfilEgreso  || []).filter(e  => targetIds.has(e.participante_id))
 
-    const total        = partFiltrados.length
-    const completados  = partFiltrados.filter(p => p.completado).length
-    const rural        = partFiltrados.filter(p => p.vereda || p.corregimiento).length
+    const total          = partFiltrados.length
+    const completados    = partFiltrados.filter(p => p.completado).length
+    const rural          = partFiltrados.filter(p => p.vereda || p.corregimiento).length
     const participoAntes = partFiltrados.filter(p => p.participo_antes).length
 
     let sumaEdad = 0, cuentaEdad = 0
@@ -369,14 +367,14 @@ export default function Dashboard() {
       const pMun = partFiltrados.filter(p => p.municipio === mun)
       return {
         municipio: mun, total: tot,
-        completados:       pMun.filter(p => p.completado).length,
-        de_vereda:         pMun.filter(p => p.vereda).length,
-        de_corregimiento:  pMun.filter(p => p.corregimiento).length,
-        urbanos:           pMun.filter(p => !p.vereda && !p.corregimiento).length,
-        estudiantes:       pMun.filter(p => p.tipo_actor === 'estudiante').length,
-        docentes:          pMun.filter(p => p.tipo_actor === 'docente').length,
-        comunidad:         pMun.filter(p => p.tipo_actor === 'comunidad').length,
-        organizaciones:    pMun.filter(p => p.tipo_actor === 'organizacion').length,
+        completados:      pMun.filter(p => p.completado).length,
+        de_vereda:        pMun.filter(p => p.vereda).length,
+        de_corregimiento: pMun.filter(p => p.corregimiento).length,
+        urbanos:          pMun.filter(p => !p.vereda && !p.corregimiento).length,
+        estudiantes:      pMun.filter(p => p.tipo_actor === 'estudiante').length,
+        docentes:         pMun.filter(p => p.tipo_actor === 'docente').length,
+        comunidad:        pMun.filter(p => p.tipo_actor === 'comunidad').length,
+        organizaciones:   pMun.filter(p => p.tipo_actor === 'organizacion').length,
       }
     }).sort((a, b) => b.total - a.total)
 
@@ -385,7 +383,7 @@ export default function Dashboard() {
     const totalVotosLineas = linFiltrados.length || 1
     const lineasTop = Object.entries(lCount)
       .map(([linea, total]) => ({ linea, total, porcentaje: Math.round((total / totalVotosLineas) * 100) }))
-      .sort((a,b) => b.total - a.total)
+      .sort((a, b) => b.total - a.total)
       .slice(0, 10)
 
     const eCount = {}
@@ -393,14 +391,12 @@ export default function Dashboard() {
     const totalVotosElectivas = elFiltrados.length || 1
     const electivasTop = Object.entries(eCount)
       .map(([electiva, total]) => ({ electiva, total, porcentaje: Math.round((total / totalVotosElectivas) * 100) }))
-      .sort((a,b) => b.total - a.total)
+      .sort((a, b) => b.total - a.total)
       .slice(0, 10)
 
-    // ── Facilidades al ingreso (categoria='facilidad' en perfil_ingreso) ──────
     const facilidadesFiltradas = ingFiltrados.filter(i => i.categoria === 'facilidad' && i.competencia)
 
-    // Conteo de veces elegida en cada puesto (1 a 5)
-    const facilidadesPorPuesto = {} // { puesto: { texto: count } }
+    const facilidadesPorPuesto = {}
     facilidadesFiltradas.forEach(f => {
       const puesto = f.orden_prioridad
       if (!puesto) return
@@ -411,11 +407,10 @@ export default function Dashboard() {
     const masVotadoEnPuesto = (puesto) => {
       const conteo = facilidadesPorPuesto[puesto]
       if (!conteo) return null
-      const [texto, votos] = Object.entries(conteo).sort((a,b) => b[1]-a[1])[0]
+      const [texto, votos] = Object.entries(conteo).sort((a, b) => b[1] - a[1])[0]
       return { texto, votos }
     }
 
-    // Ranking general consolidado: puntaje ponderado (puesto 1 = 5 pts ... puesto 5 = 1 pt)
     const PESO_PUESTO = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 }
     const puntajeConsolidado = {}
     const vecesNo1 = {}
@@ -426,7 +421,7 @@ export default function Dashboard() {
     })
     const facilidadesRanking = Object.entries(puntajeConsolidado)
       .map(([aspecto, puntaje]) => ({ aspecto, puntaje, veces_no1: vecesNo1[aspecto] || 0 }))
-      .sort((a,b) => b.puntaje - a.puntaje)
+      .sort((a, b) => b.puntaje - a.puntaje)
 
     const facilidadesTop3Puestos = {
       puesto1: masVotadoEnPuesto(1),
@@ -439,7 +434,6 @@ export default function Dashboard() {
       progPref[p.programa] = (progPref[p.programa] || 0) + 1
     })
 
-    // perfil_ingreso/egreso no tiene columna 'categoria' ni 'orden' — usa 'orden_prioridad'
     const agruparCompetencias = (coleccion) => {
       const conteo = {}
       coleccion.forEach(c => {
@@ -451,7 +445,6 @@ export default function Dashboard() {
         .sort((a, b) => b.total - a.total)
     }
 
-
     return {
       participantes: partFiltrados,
       progOrden:     poFiltrados,
@@ -460,7 +453,7 @@ export default function Dashboard() {
       tasa:         total ? Math.round((completados / total) * 100) : 0,
       municipios:   Object.keys(porMunicipio).length,
       edadPromedio: cuentaEdad ? Math.round(sumaEdad / cuentaEdad) : 0,
-      porMunicipio: Object.entries(porMunicipio).map(([municipio, total]) => ({ municipio, total })).sort((a,b) => b.total - a.total),
+      porMunicipio: Object.entries(porMunicipio).map(([municipio, total]) => ({ municipio, total })).sort((a, b) => b.total - a.total),
       porActor:     Object.entries(porActor).map(([k, v]) => ({ actor: ACTOR_LABEL[k] || k, total: v })),
       porEdad:      Object.entries(porEdad).filter(([, v]) => v > 0).map(([k, v]) => ({ rango: k, total: v })),
       municipioDetalle, lineasTop, electivasTop,
@@ -468,7 +461,6 @@ export default function Dashboard() {
       competenciasIngreso: agruparCompetencias(ingFiltrados),
       competenciasEgreso:  agruparCompetencias(egFiltrados),
       facilidadesRanking, facilidadesTop3Puestos,
-      // KPIs rápidos
       kpiTemaInvestigacionTop: lineasTop[0]?.linea || '—',
       kpiElectivaTop:          electivasTop[0]?.electiva || '—',
       kpiFacilidadNo1:         facilidadesRanking[0]?.aspecto || '—',
@@ -484,24 +476,21 @@ export default function Dashboard() {
     }
   }, [rawData.participantes])
 
-  // ── Exportación CSV completa ──────────────────────────────────────────────
+  // ── Exportación CSV sábana completa ──────────────────────────────────────
   const procesarExportacionCSV = () => {
     if (!rawData.participantes?.length) return
 
     const sabana = rawData.participantes.map(p => {
-      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-      const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
-      const lineasRep     = (rawData.lineas    || []).filter(l  => l.participante_id === p.id).map(l => l.linea).join(' | ')
-      const electivasRep  = (rawData.electivas || []).filter(e  => e.participante_id === p.id).map(e => e.electiva).join(' | ')
-      const compIngreso   = (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(i => `${i.competencia}(${i.orden_prioridad ?? ''})`).join(' | ')
-      const compEgreso    = (rawData.perfilEgreso  || []).filter(e => e.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
+      const programa1     = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+      const programa2     = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
+      const lineasRep     = (rawData.lineas        || []).filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ')
+      const electivasRep  = (rawData.electivas     || []).filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ')
+      const compIngreso   = (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id).sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0)).map(i => `${i.competencia}(${i.orden_prioridad ?? ''})`).join(' | ')
+      const compEgreso    = (rawData.perfilEgreso  || []).filter(e => e.participante_id === p.id).sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
       const certFila      = (rawData.certificados  || []).find(c => c.participante_id === p.id)
       const certificado   = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
-      const visionIngreso = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial) ?.vision_territorial || ''
-      
-
-      
-      const manifiestoFila   = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      const visionIngreso = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial)?.vision_territorial || ''
+      const manifiestoFila    = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
       const mensajeFinal      = manifiestoFila?.comentario_final || ''
       const comentariosEgreso = [...new Set(
         (rawData.perfilEgreso || [])
@@ -510,60 +499,59 @@ export default function Dashboard() {
       )].join(' || ')
 
       return {
-        'ID Participante':                    p.id,
-        'Nombre Completo':                    p.nombre              || 'Anónimo',
-        'Municipio':                          p.municipio           || '',
-        'Corregimiento':                      p.corregimiento       || '',
-        'Vereda':                             p.vereda              || '',
-        'Zona':                               p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
-        'Edad':                               p.edad                || '',
-        'Tipo de Actor':                      ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
-        'Colegio':                            p.colegio             || '',
-        'Grado':                              p.grado               || '',
-        'Institución Educativa':              p.institucion         || '',
-        'Área de Enseñanza':                  p.area                || '',
-        'Nivel Educativo':                    p.nivel_educativo     || '',
-        'Organización':                       p.organizacion        || '',
-        'Correo':                             p.correo              || '',
-        '¿Completó Todo?':                    p.completado          ? 'SÍ' : 'NO',
-        '¿Participó Antes?':                  p.participo_antes     ? 'SÍ' : 'NO',
-        'Importancia Lengua Barí e Idiomas':  p.importancia_lengua || 'Sin responder',
-        'Programa Preferencia 1':             PROG_LABEL[programa1] || programa1,
-        'Programa Preferencia 2':             PROG_LABEL[programa2] || programa2,
-        'Líneas de Interés':                  lineasRep,
-        'Electivas Seleccionadas':            electivasRep,
-        'Competencias Perfil Ingreso':        compIngreso,
-        'Competencias Perfil Egreso':         compEgreso,
-        'Código Certificado':                 certificado,
-        'Fecha de Registro':                  p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
-        'Rasgo Especial Egresado':            comentariosEgreso,
-        'Conocimiento Cultura Barí (0-10)':   p.conocimiento_bari ?? '',
+        'ID Participante':                     p.id,
+        'Nombre Completo':                     p.nombre              || 'Anónimo',
+        'Municipio':                           p.municipio           || '',
+        'Corregimiento':                       p.corregimiento       || '',
+        'Vereda':                              p.vereda              || '',
+        'Zona':                                p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
+        'Edad':                                p.edad                || '',
+        'Tipo de Actor':                       ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+        'Colegio':                             p.colegio             || '',
+        'Grado':                               p.grado               || '',
+        'Institución Educativa':               p.institucion         || '',
+        'Área de Enseñanza':                   p.area                || '',
+        'Nivel Educativo':                     p.nivel_educativo     || '',
+        'Organización':                        p.organizacion        || '',
+        'Correo':                              p.correo              || '',
+        '¿Completó Todo?':                     p.completado          ? 'SÍ' : 'NO',
+        '¿Participó Antes?':                   p.participo_antes     ? 'SÍ' : 'NO',
+        'Importancia Lengua Barí e Idiomas':   p.importancia_lengua  || 'Sin responder',
+        'Programa Preferencia 1':              PROG_LABEL[programa1] || programa1,
+        'Programa Preferencia 2':              PROG_LABEL[programa2] || programa2,
+        'Líneas de Interés':                   lineasRep,
+        'Electivas Seleccionadas':             electivasRep,
+        'Competencias Perfil Ingreso':         compIngreso,
+        'Competencias Perfil Egreso':          compEgreso,
+        'Código Certificado':                  certificado,
+        'Fecha de Registro':                   p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
+        'Rasgo Especial Egresado':             comentariosEgreso,
+        'Conocimiento Cultura Barí (0-10)':    p.conocimiento_bari ?? '',
         'Desea que estudiantes conozcan Barí': p.desea_conocer_bari === true ? 'Sí' : p.desea_conocer_bari === false ? 'No' : '',
-        'Cómo conocer cultura Barí':          p.como_conocer_bari  || '',
-        'Mensaje Final':                      mensajeFinal,
-        'Visión Territorial del programa':    visionIngreso,
+        'Cómo conocer cultura Barí':           p.como_conocer_bari   || '',
+        'Mensaje Final':                       mensajeFinal,
+        'Visión Territorial del programa':     visionIngreso,
       }
     })
 
     exportarCSV(sabana, 'observatorio_catatumbo_sabana_completa')
   }
 
-  // ── Exportación Excel multi-hoja (Sábana + Respuestas Abiertas + Resúmenes) ──
+  // ── Exportación Excel multi-hoja (sin respuestas abiertas) ───────────────
   const procesarExportacionExcel = () => {
     if (!rawData.participantes?.length) return
 
-    // Hoja 1: Sábana completa (reutiliza la misma lógica del CSV)
+    // Hoja 1: Sábana completa
     const sabana = rawData.participantes.map(p => {
-      const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-      const programa2 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 2)?.programa || ''
-      const lineasRep     = (rawData.lineas    || []).filter(l  => l.participante_id === p.id).map(l => l.linea).join(' | ')
-      const electivasRep  = (rawData.electivas || []).filter(e  => e.participante_id === p.id).map(e => e.electiva).join(' | ')
-      const compEgreso    = (rawData.perfilEgreso || []).filter(e => e.participante_id === p.id).sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
-      const facilidadesRep = (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id && i.categoria === 'facilidad').sort((a,b) => (a.orden_prioridad||0)-(b.orden_prioridad||0)).map(i => `#${i.orden_prioridad}: ${i.competencia}`).join(' | ')
-      const certFila      = (rawData.certificados  || []).find(c => c.participante_id === p.id)
-      const certificado   = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
-      const visionIngreso = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial)?.vision_territorial || ''
-      const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      const programa1      = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+      const lineasRep      = (rawData.lineas        || []).filter(l => l.participante_id === p.id).map(l => l.linea).join(' | ')
+      const electivasRep   = (rawData.electivas     || []).filter(e => e.participante_id === p.id).map(e => e.electiva).join(' | ')
+      const compEgreso     = (rawData.perfilEgreso  || []).filter(e => e.participante_id === p.id).sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0)).map(e => `${e.competencia}(${e.orden_prioridad ?? ''})`).join(' | ')
+      const facilidadesRep = (rawData.perfilIngreso || []).filter(i => i.participante_id === p.id && i.categoria === 'facilidad').sort((a, b) => (a.orden_prioridad || 0) - (b.orden_prioridad || 0)).map(i => `#${i.orden_prioridad}: ${i.competencia}`).join(' | ')
+      const certFila       = (rawData.certificados  || []).find(c => c.participante_id === p.id)
+      const certificado    = certFila ? (certFila.codigo_qr || certFila.codigo_verificacion || 'SÍ') : 'No certificado'
+      const visionIngreso  = (rawData.perfilIngreso || []).find(i => i.participante_id === p.id && i.vision_territorial)?.vision_territorial || ''
+      const manifiestoFila = (rawData.manifiesto    || []).find(m => m.participante_id === p.id)
       const mensajeFinal   = manifiestoFila?.comentario_final || ''
       const comentariosEgreso = [...new Set(
         (rawData.perfilEgreso || [])
@@ -572,261 +560,144 @@ export default function Dashboard() {
       )].join(' || ')
 
       return {
-        'ID Participante':                     p.id,
-        'Nombre Completo':                     p.nombre || 'Anónimo',
-        'Correo Electrónico':                  p.correo || '',
-        'Municipio':                           p.municipio || '',
-        'Corregimiento':                       p.corregimiento || '',
-        'Vereda':                              p.vereda || '',
-        'Zona':                                p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
-        'Edad':                                p.edad || '',
-        'Tipo de Actor':                       ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
-        'Programa Académico Preferencia 1':    PROG_LABEL[programa1] || programa1,
-        '¿Completó Todo?':                     p.completado ? 'SÍ' : 'NO',
-        'Facilidades de Ingreso (ordenadas)':  facilidadesRep,
-        'Líneas de Investigación':             lineasRep,
-        'Electivas Seleccionadas':             electivasRep,
-        'Competencias Perfil Egreso':          compEgreso,
-        'Visión Territorial del Programa':     visionIngreso,
-        'Rasgo Especial Egresado':             comentariosEgreso,
-        'Mensaje Final':                       mensajeFinal,
-        'Conocimiento Cultura Barí (0-10)':    p.conocimiento_bari ?? '',
-        'Código Certificado':                  certificado,
-        'Fecha de Registro':                   p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
+        'ID Participante':                    p.id,
+        'Nombre Completo':                    p.nombre || 'Anónimo',
+        'Correo Electrónico':                 p.correo || '',
+        'Municipio':                          p.municipio || '',
+        'Corregimiento':                      p.corregimiento || '',
+        'Vereda':                             p.vereda || '',
+        'Zona':                               p.vereda ? 'Rural-Vereda' : p.corregimiento ? 'Rural-Corregimiento' : 'Urbana',
+        'Edad':                               p.edad || '',
+        'Tipo de Actor':                      ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || '',
+        'Programa Académico Preferencia 1':   PROG_LABEL[programa1] || programa1,
+        '¿Completó Todo?':                    p.completado ? 'SÍ' : 'NO',
+        'Facilidades de Ingreso (ordenadas)': truncarCelda(facilidadesRep),
+        'Líneas de Investigación':            truncarCelda(lineasRep),
+        'Electivas Seleccionadas':            truncarCelda(electivasRep),
+        'Competencias Perfil Egreso':         truncarCelda(compEgreso),
+        'Visión Territorial del Programa':    truncarCelda(visionIngreso),
+        'Rasgo Especial Egresado':            truncarCelda(comentariosEgreso),
+        'Mensaje Final':                      truncarCelda(mensajeFinal),
+        'Conocimiento Cultura Barí (0-10)':   p.conocimiento_bari ?? '',
+        'Código Certificado':                 certificado,
+        'Fecha de Registro':                  p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : '',
       }
     })
 
-    // Hoja 2: Respuestas Abiertas (Programa Académico | Pregunta | Respuesta | Fecha)
-const respuestasAbiertas = []
-rawData.participantes.forEach(p => {
-  const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
-  const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-  const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
-  const idParticipante = p.id
-  const tipoActor = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
-
-  const ingresoUnicos = new Map()
-  ;(rawData.perfilIngreso || [])
-    .filter(i => i.participante_id === p.id && i.vision_territorial)
-    .forEach(i => {
-      const key = `${i.participante_id}__${i.programa}`
-      if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
-    })
-  ingresoUnicos.forEach(i => {
-    respuestasAbiertas.push({
-      'ID Participante':    idParticipante,
-      'Tipo de Actor':      tipoActor,
-      'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
-      'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
-      'Respuesta':          i.vision_territorial,
-      'Fecha de Registro':  fecha,
-    })
-  })
-
-  const egresoUnicos = new Map()
-  ;(rawData.perfilEgreso || [])
-    .filter(e => e.participante_id === p.id && e.comentario_libre)
-    .forEach(e => {
-      const key = `${e.participante_id}__${e.programa}`
-      if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
-    })
-  egresoUnicos.forEach(e => {
-    respuestasAbiertas.push({
-      'ID Participante':    idParticipante,
-      'Tipo de Actor':      tipoActor,
-      'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
-      'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
-      'Respuesta':          e.comentario_libre,
-      'Fecha de Registro':  fecha,
-    })
-  })
-
-  const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-  if (manifiestoFila?.comentario_final) {
-    respuestasAbiertas.push({
-      'ID Participante':    idParticipante,
-      'Tipo de Actor':      tipoActor,
-      'Programa Académico': progLabel,
-      'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
-      'Respuesta':          manifiestoFila.comentario_final,
-      'Fecha de Registro':  fecha,
-    })
-  }
-
-  if (p.como_conocer_bari) {
-    respuestasAbiertas.push({
-      'ID Participante':    idParticipante,
-      'Tipo de Actor':      tipoActor,
-      'Programa Académico': progLabel,
-      'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
-      'Respuesta':          p.como_conocer_bari,
-      'Fecha de Registro':  fecha,
-    })
-  }
-
-  const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-  if (manifiestoEmp) {
-    const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
-    const campoEmp = EMP_CAMPO[programa1]
-    const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
-    if (valorEmp) {
-      respuestasAbiertas.push({
-        'ID Participante':    idParticipante,
-        'Tipo de Actor':      tipoActor,
-        'Programa Académico': progLabel,
-        'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
-        'Respuesta':          valorEmp,
-        'Fecha de Registro':  fecha,
-      })
-    }
-  }
-})
-
-    // Hoja 3: Resumen Respuestas Abiertas (frecuencia de respuestas repetidas, normalizando texto)
-    const normalizar = (txt) => (txt || '').trim().toLowerCase().replace(/\s+/g, ' ')
-    const construirResumen = (pregunta) => {
-      const filas = respuestasAbiertas.filter(r => r.Pregunta === pregunta)
-      const conteo = {}
-      const original = {}
-      filas.forEach(r => {
-        const key = normalizar(r.Respuesta)
-        if (!key) return
-        conteo[key] = (conteo[key] || 0) + 1
-        if (!original[key]) original[key] = r.Respuesta
-      })
-      return Object.entries(conteo)
-        .map(([key, frecuencia]) => ({ respuesta: original[key], frecuencia }))
-        .sort((a, b) => b.frecuencia - a.frecuencia)
-        .slice(0, 10)
-    }
-
-    const preguntasUnicas = [...new Set(respuestasAbiertas.map(r => r.Pregunta))]
-    const resumenAbiertas = []
-    preguntasUnicas.forEach(pregunta => {
-      const top10 = construirResumen(pregunta)
-      top10.forEach((item, i) => {
-        resumenAbiertas.push({
-          'Pregunta':  pregunta,
-          'Ranking':   i + 1,
-          'Respuesta': item.respuesta,
-          'Frecuencia': item.frecuencia,
-        })
-      })
-    })
-
-    // Hoja 4: Top Temas de Investigación (con %)
+    // Hoja 2: Top Temas de Investigación
     const lineasResumen = (datosFiltrados?.lineasTop || []).map((l, i) => ({
       'Ranking': i + 1, 'Tema de Investigación': l.linea, 'Cantidad de Votos': l.total, 'Porcentaje': `${l.porcentaje}%`,
     }))
 
-    // Hoja 5: Top Electivas (con %)
+    // Hoja 3: Top Electivas
     const electivasResumen = (datosFiltrados?.electivasTop || []).map((e, i) => ({
       'Ranking': i + 1, 'Materia Complementaria': e.electiva, 'Cantidad de Votos': e.total, 'Porcentaje': `${e.porcentaje}%`,
     }))
 
-    // Hoja 6: Ranking de Facilidades al Ingreso
+    // Hoja 4: Ranking de Facilidades al Ingreso
     const facilidadesResumen = (datosFiltrados?.facilidadesRanking || []).map((f, i) => ({
       'Posición': i + 1, 'Aspecto': f.aspecto, 'Puntaje Ponderado': f.puntaje, 'Veces Elegido como #1': f.veces_no1,
     }))
 
     exportarExcelMultihoja([
-      { nombre: 'Sábana Completa',             datos: sabana },
-      { nombre: 'Top Temas Investigación',     datos: lineasResumen },
-      { nombre: 'Top Materias Complementarias',datos: electivasResumen },
-      { nombre: 'Ranking Facilidades Ingreso', datos: facilidadesResumen },
+      { nombre: 'Sábana Completa',              datos: sabana },
+      { nombre: 'Top Temas Investigación',      datos: lineasResumen },
+      { nombre: 'Top Materias Complementarias', datos: electivasResumen },
+      { nombre: 'Ranking Facilidades Ingreso',  datos: facilidadesResumen },
     ], 'observatorio_catatumbo_completo')
   }
 
+  // ── Exportación CSV Respuestas Abiertas ──────────────────────────────────
   const procesarExportacionCSVAbiertas = () => {
-  if (!rawData.participantes?.length) return
+    if (!rawData.participantes?.length) return
 
-  const respuestasAbiertas = []
-  rawData.participantes.forEach(p => {
-    const fecha = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
-    const programa1 = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-    const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
-    const idParticipante = p.id
-    const tipoActor = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
+    const respuestasAbiertas = []
+    rawData.participantes.forEach(p => {
+      const fecha      = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
+      const programa1  = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
+      const progLabel  = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+      const idParticipante = p.id
+      const tipoActor      = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
 
-    const ingresoUnicos = new Map()
-    ;(rawData.perfilIngreso || [])
-      .filter(i => i.participante_id === p.id && i.vision_territorial)
-      .forEach(i => {
-        const key = `${i.participante_id}__${i.programa}`
-        if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
+      const ingresoUnicos = new Map()
+      ;(rawData.perfilIngreso || [])
+        .filter(i => i.participante_id === p.id && i.vision_territorial)
+        .forEach(i => {
+          const key = `${i.participante_id}__${i.programa}`
+          if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
+        })
+      ingresoUnicos.forEach(i => {
+        respuestasAbiertas.push({
+          'ID Participante':    idParticipante,
+          'Tipo de Actor':      tipoActor,
+          'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
+          'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
+          'Respuesta':          i.vision_territorial || '',
+          'Fecha de Registro':  fecha,
+        })
       })
-    ingresoUnicos.forEach(i => {
-      respuestasAbiertas.push({
-        'ID Participante':    idParticipante,
-        'Tipo de Actor':      tipoActor,
-        'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
-        'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
-        'Respuesta':          i.vision_territorial || '',
-        'Fecha de Registro':  fecha,
-      })
-    })
 
-    const egresoUnicos = new Map()
-    ;(rawData.perfilEgreso || [])
-      .filter(e => e.participante_id === p.id && e.comentario_libre)
-      .forEach(e => {
-        const key = `${e.participante_id}__${e.programa}`
-        if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+      const egresoUnicos = new Map()
+      ;(rawData.perfilEgreso || [])
+        .filter(e => e.participante_id === p.id && e.comentario_libre)
+        .forEach(e => {
+          const key = `${e.participante_id}__${e.programa}`
+          if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+        })
+      egresoUnicos.forEach(e => {
+        respuestasAbiertas.push({
+          'ID Participante':    idParticipante,
+          'Tipo de Actor':      tipoActor,
+          'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
+          'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
+          'Respuesta':          e.comentario_libre || '',
+          'Fecha de Registro':  fecha,
+        })
       })
-    egresoUnicos.forEach(e => {
-      respuestasAbiertas.push({
-        'ID Participante':    idParticipante,
-        'Tipo de Actor':      tipoActor,
-        'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
-        'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
-        'Respuesta':          e.comentario_libre || '',
-        'Fecha de Registro':  fecha,
-      })
-    })
 
-    const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-    if (manifiestoFila?.comentario_final) {
-      respuestasAbiertas.push({
-        'ID Participante':    idParticipante,
-        'Tipo de Actor':      tipoActor,
-        'Programa Académico': progLabel,
-        'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
-        'Respuesta':          manifiestoFila.comentario_final,
-        'Fecha de Registro':  fecha,
-      })
-    }
-
-    if (p.como_conocer_bari) {
-      respuestasAbiertas.push({
-        'ID Participante':    idParticipante,
-        'Tipo de Actor':      tipoActor,
-        'Programa Académico': progLabel,
-        'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
-        'Respuesta':          p.como_conocer_bari,
-        'Fecha de Registro':  fecha,
-      })
-    }
-
-    const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-    if (manifiestoEmp) {
-      const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
-      const campoEmp = EMP_CAMPO[programa1]
-      const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
-      if (valorEmp) {
+      const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      if (manifiestoFila?.comentario_final) {
         respuestasAbiertas.push({
           'ID Participante':    idParticipante,
           'Tipo de Actor':      tipoActor,
           'Programa Académico': progLabel,
-          'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
-          'Respuesta':          valorEmp,
+          'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
+          'Respuesta':          manifiestoFila.comentario_final,
           'Fecha de Registro':  fecha,
         })
       }
-    }
-  })
 
-  exportarCSV(respuestasAbiertas, 'observatorio_catatumbo_respuestas_abiertas')
-}
+      if (p.como_conocer_bari) {
+        respuestasAbiertas.push({
+          'ID Participante':    idParticipante,
+          'Tipo de Actor':      tipoActor,
+          'Programa Académico': progLabel,
+          'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
+          'Respuesta':          p.como_conocer_bari,
+          'Fecha de Registro':  fecha,
+        })
+      }
+
+      const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
+      if (manifiestoEmp) {
+        const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
+        const campoEmp  = EMP_CAMPO[programa1]
+        const valorEmp  = campoEmp ? manifiestoEmp[campoEmp] : null
+        if (valorEmp) {
+          respuestasAbiertas.push({
+            'ID Participante':    idParticipante,
+            'Tipo de Actor':      tipoActor,
+            'Programa Académico': progLabel,
+            'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
+            'Respuesta':          valorEmp,
+            'Fecha de Registro':  fecha,
+          })
+        }
+      }
+    })
+
+    exportarCSV(respuestasAbiertas, 'observatorio_catatumbo_respuestas_abiertas')
+  }
 
   // ── Eliminación de registros ──────────────────────────────────────────────
   const eliminarRegistros = async (tipo) => {
@@ -965,23 +836,22 @@ rawData.participantes.forEach(p => {
             {vista === 0 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard emoji="👥" label="Participantes" value={datosFiltrados.total} accent={G.green} />
-                  <StatCard emoji="✅" label="Completaron" value={datosFiltrados.completados} sub={`${datosFiltrados.tasa}% tasa de éxito`} accent={G.blue} />
-                  <StatCard emoji="🌾" label="Población Rural" value={datosFiltrados.rural} sub="Veredas y Corregimientos" accent={G.orange} />
-                  <StatCard emoji="📍" label="Municipios" value={datosFiltrados.municipios} accent={G.purple} />
+                  <StatCard emoji="👥" label="Participantes"    value={datosFiltrados.total}       accent={G.green} />
+                  <StatCard emoji="✅" label="Completaron"      value={datosFiltrados.completados} sub={`${datosFiltrados.tasa}% tasa de éxito`} accent={G.blue} />
+                  <StatCard emoji="🌾" label="Población Rural"  value={datosFiltrados.rural}       sub="Veredas y Corregimientos" accent={G.orange} />
+                  <StatCard emoji="📍" label="Municipios"       value={datosFiltrados.municipios}  accent={G.purple} />
                 </div>
 
-                {/* KPIs rápidos por programa académico */}
                 <div>
                   <p className="text-xs font-display font-bold uppercase tracking-wide text-gray-400 mb-2">
                     Indicadores Rápidos {filtroPrograma ? `· ${PROG_LABEL[filtroPrograma]}` : '· Todos los programas'}
                   </p>
                   <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                    <StatCard emoji="📨" label="Total Respuestas" value={datosFiltrados.total} accent={G.green} />
-                    <StatCard emoji="🎓" label="Programas Analizados" value={datosFiltrados.kpiProgramasAnalizados} accent={G.blue} />
-                    <StatCard emoji="🔬" label="Tema Investigación Top" value={datosFiltrados.kpiTemaInvestigacionTop} accent={G.purple} />
-                    <StatCard emoji="📚" label="Materia Complementaria Top" value={datosFiltrados.kpiElectivaTop} accent={G.orange} />
-                    <StatCard emoji="🥇" label="Facilidad #1 al Ingreso" value={datosFiltrados.kpiFacilidadNo1} accent={G.red} />
+                    <StatCard emoji="📨" label="Total Respuestas"           value={datosFiltrados.total}                  accent={G.green} />
+                    <StatCard emoji="🎓" label="Programas Analizados"       value={datosFiltrados.kpiProgramasAnalizados} accent={G.blue} />
+                    <StatCard emoji="🔬" label="Tema Investigación Top"     value={datosFiltrados.kpiTemaInvestigacionTop} accent={G.purple} />
+                    <StatCard emoji="📚" label="Materia Complementaria Top" value={datosFiltrados.kpiElectivaTop}         accent={G.orange} />
+                    <StatCard emoji="🥇" label="Facilidad #1 al Ingreso"   value={datosFiltrados.kpiFacilidadNo1}        accent={G.red} />
                   </div>
                 </div>
 
@@ -1037,9 +907,9 @@ rawData.participantes.forEach(p => {
                       <XAxis dataKey="municipio" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip /><Legend />
-                      <Bar dataKey="urbanos" name="Zona Urbana" stackId="t" fill={G.blue} />
+                      <Bar dataKey="urbanos"          name="Zona Urbana"    stackId="t" fill={G.blue} />
                       <Bar dataKey="de_corregimiento" name="Corregimientos" stackId="t" fill={G.purple} />
-                      <Bar dataKey="de_vereda" name="Veredas" stackId="t" fill={G.green} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="de_vereda"        name="Veredas"        stackId="t" fill={G.green} radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1074,57 +944,57 @@ rawData.participantes.forEach(p => {
             {vista === 2 && (
               <div className="grid md:grid-cols-2 gap-6">
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1"> ¿En qué temas consideras que debería investigar este programa?</h3>
+                  <h3 className="font-display font-bold text-gray-800 text-sm mb-1">¿En qué temas consideras que debería investigar este programa?</h3>
                   <p className="text-xs text-gray-400 mb-4">Top 10 temas más seleccionados {filtroPrograma ? `· ${PROG_LABEL[filtroPrograma]}` : '· Todos los programas'}</p>
-                  {datosFiltrados.lineasTop.length
-                    ? <>
-                        <ResponsiveContainer width="100%" height={280}>
-                          <BarChart data={datosFiltrados.lineasTop} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                            <XAxis type="number" tick={{ fontSize: 10 }} />
-                            <YAxis type="category" dataKey="linea" width={140} tick={{ fontSize: 10 }} />
-                            <Tooltip formatter={(v, n, props) => [`${v} votos (${props.payload.porcentaje}%)`, 'Votos']} />
-                            <Bar dataKey="total" fill={G.purple} radius={[0, 4, 4, 0]} name="Votos" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                        <div className="mt-3 divide-y divide-gray-50 text-xs">
-                          {datosFiltrados.lineasTop.map((l, i) => (
-                            <div key={i} className="flex items-center justify-between py-1.5">
-                              <span className="text-gray-600"><strong className="text-gray-400 mr-1">{i + 1}.</strong>{l.linea}</span>
-                              <span className="font-bold text-gray-800 whitespace-nowrap ml-2">{l.total} <span className="text-gray-400 font-normal">({l.porcentaje}%)</span></span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    : <SinDatos />}
+                  {datosFiltrados.lineasTop.length ? (
+                    <>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={datosFiltrados.lineasTop} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis type="category" dataKey="linea" width={140} tick={{ fontSize: 10 }} />
+                          <Tooltip formatter={(v, n, props) => [`${v} votos (${props.payload.porcentaje}%)`, 'Votos']} />
+                          <Bar dataKey="total" fill={G.purple} radius={[0, 4, 4, 0]} name="Votos" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="mt-3 divide-y divide-gray-50 text-xs">
+                        {datosFiltrados.lineasTop.map((l, i) => (
+                          <div key={i} className="flex items-center justify-between py-1.5">
+                            <span className="text-gray-600"><strong className="text-gray-400 mr-1">{i + 1}.</strong>{l.linea}</span>
+                            <span className="font-bold text-gray-800 whitespace-nowrap ml-2">{l.total} <span className="text-gray-400 font-normal">({l.porcentaje}%)</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : <SinDatos />}
                 </div>
+
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-1">¿Qué materias complementarias enriquecerían la formación?</h3>
                   <p className="text-xs text-gray-400 mb-4">Top 10 materias más seleccionadas {filtroPrograma ? `· ${PROG_LABEL[filtroPrograma]}` : '· Todos los programas'}</p>
-                  {datosFiltrados.electivasTop.length
-                    ? <>
-                        <ResponsiveContainer width="100%" height={280}>
-                          <BarChart data={datosFiltrados.electivasTop} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
-                            <XAxis type="number" tick={{ fontSize: 10 }} />
-                            <YAxis type="category" dataKey="electiva" width={140} tick={{ fontSize: 10 }} />
-                            <Tooltip formatter={(v, n, props) => [`${v} votos (${props.payload.porcentaje}%)`, 'Votos']} />
-                            <Bar dataKey="total" fill={G.blue} radius={[0, 4, 4, 0]} name="Votos" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                        <div className="mt-3 divide-y divide-gray-50 text-xs">
-                          {datosFiltrados.electivasTop.map((e, i) => (
-                            <div key={i} className="flex items-center justify-between py-1.5">
-                              <span className="text-gray-600"><strong className="text-gray-400 mr-1">{i + 1}.</strong>{e.electiva}</span>
-                              <span className="font-bold text-gray-800 whitespace-nowrap ml-2">{e.total} <span className="text-gray-400 font-normal">({e.porcentaje}%)</span></span>
-                            </div>
-                          ))}
-                        </div>
-                      </>
-                    : <SinDatos />}
+                  {datosFiltrados.electivasTop.length ? (
+                    <>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={datosFiltrados.electivasTop} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f3f4f6" />
+                          <XAxis type="number" tick={{ fontSize: 10 }} />
+                          <YAxis type="category" dataKey="electiva" width={140} tick={{ fontSize: 10 }} />
+                          <Tooltip formatter={(v, n, props) => [`${v} votos (${props.payload.porcentaje}%)`, 'Votos']} />
+                          <Bar dataKey="total" fill={G.blue} radius={[0, 4, 4, 0]} name="Votos" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                      <div className="mt-3 divide-y divide-gray-50 text-xs">
+                        {datosFiltrados.electivasTop.map((e, i) => (
+                          <div key={i} className="flex items-center justify-between py-1.5">
+                            <span className="text-gray-600"><strong className="text-gray-400 mr-1">{i + 1}.</strong>{e.electiva}</span>
+                            <span className="font-bold text-gray-800 whitespace-nowrap ml-2">{e.total} <span className="text-gray-400 font-normal">({e.porcentaje}%)</span></span>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  ) : <SinDatos />}
                 </div>
 
-                {/* Ranking de Facilidades al Ingreso — pregunta de ordenamiento */}
                 <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-1">
                     ¿Qué debería facilitar la Universidad Nacional del Catatumbo al inicio del programa para que el estudiante que ingrese pueda continuar su proceso de formación?
@@ -1132,10 +1002,8 @@ rawData.participantes.forEach(p => {
                   <p className="text-xs text-gray-400 mb-4">
                     Pregunta de priorización (ordenamiento) {filtroPrograma ? `· ${PROG_LABEL[filtroPrograma]}` : '· Todos los programas'}
                   </p>
-
                   {datosFiltrados.facilidadesRanking.length ? (
                     <>
-                      {/* Aspecto más elegido en puestos #1, #2, #3 */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                         {[
                           { puesto: 1, data: datosFiltrados.facilidadesTop3Puestos.puesto1, color: G.green,  bg: '#f2faeb' },
@@ -1144,17 +1012,15 @@ rawData.participantes.forEach(p => {
                         ].map(({ puesto, data, color, bg }) => (
                           <div key={puesto} className="rounded-2xl p-4" style={{ background: bg }}>
                             <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color }}>Más elegido en puesto #{puesto}</p>
-                            {data
-                              ? <>
-                                  <p className="font-display font-bold text-sm text-gray-800 leading-snug">{data.texto}</p>
-                                  <p className="text-xs text-gray-500 mt-1">{data.votos} {data.votos === 1 ? 'persona lo eligió' : 'personas lo eligieron'} en el puesto #{puesto}</p>
-                                </>
-                              : <p className="text-xs text-gray-400">Sin datos aún</p>}
+                            {data ? (
+                              <>
+                                <p className="font-display font-bold text-sm text-gray-800 leading-snug">{data.texto}</p>
+                                <p className="text-xs text-gray-500 mt-1">{data.votos} {data.votos === 1 ? 'persona lo eligió' : 'personas lo eligieron'} en el puesto #{puesto}</p>
+                              </>
+                            ) : <p className="text-xs text-gray-400">Sin datos aún</p>}
                           </div>
                         ))}
                       </div>
-
-                      {/* Tabla de ranking consolidado */}
                       <p className="text-xs font-display font-bold uppercase tracking-wide text-gray-400 mb-2">Ranking general consolidado (puntaje ponderado por posición)</p>
                       <div className="overflow-hidden rounded-xl border border-gray-100">
                         <table className="w-full text-left border-collapse">
@@ -1232,19 +1098,19 @@ rawData.participantes.forEach(p => {
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 mb-2">Primera Preferencia de Programas</h3>
                   <p className="text-xs text-gray-400 mb-4">Programa seleccionado con prioridad 1</p>
-                  {datosFiltrados.progPref.length
-                    ? <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={datosFiltrados.progPref}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-                          <XAxis dataKey="programa" tick={{ fontSize: 11 }} />
-                          <YAxis tick={{ fontSize: 11 }} />
-                          <Tooltip />
-                          <Bar dataKey="total" fill={G.green} radius={[4, 4, 0, 0]}>
-                            {datosFiltrados.progPref.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    : <SinDatos />}
+                  {datosFiltrados.progPref.length ? (
+                    <ResponsiveContainer width="100%" height={250}>
+                      <BarChart data={datosFiltrados.progPref}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                        <XAxis dataKey="programa" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Bar dataKey="total" fill={G.green} radius={[4, 4, 0, 0]}>
+                          {datosFiltrados.progPref.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  ) : <SinDatos />}
                 </div>
               </div>
             )}
@@ -1253,10 +1119,10 @@ rawData.participantes.forEach(p => {
             {vista === 5 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  <StatCard emoji="📈" label="Tasa de Completitud" value={`${datosFiltrados.tasa}%`} accent={G.green} />
-                  <StatCard emoji="📜" label="Certificados" value={datosFiltrados.certificados} accent={G.blue} />
-                  <StatCard emoji="🔄" label="Participación Previa" value={datosFiltrados.participoAntes} accent={G.orange} />
-                  <StatCard emoji="🧮" label="Muestra Total" value={datosFiltrados.total} accent={G.purple} />
+                  <StatCard emoji="📈" label="Tasa de Completitud"  value={`${datosFiltrados.tasa}%`}       accent={G.green} />
+                  <StatCard emoji="📜" label="Certificados"         value={datosFiltrados.certificados}      accent={G.blue} />
+                  <StatCard emoji="🔄" label="Participación Previa" value={datosFiltrados.participoAntes}    accent={G.orange} />
+                  <StatCard emoji="🧮" label="Muestra Total"        value={datosFiltrados.total}             accent={G.purple} />
                 </div>
 
                 <div className="grid lg:grid-cols-2 gap-6">
@@ -1265,42 +1131,41 @@ rawData.participantes.forEach(p => {
                       ¿Qué debería facilitar la Universidad Nacional del Catatumbo al inicio del programa para que el estudiante que ingrese pueda continuar su proceso de formación?
                     </h3>
                     <p className="text-xs text-gray-400 mb-3">Top 5 del ranking consolidado · ver detalle completo en "Líneas & Electivas"</p>
-                    {datosFiltrados.facilidadesRanking.length
-                      ? <div className="space-y-2">
-                          {datosFiltrados.facilidadesRanking.slice(0, 5).map((f, i) => (
-                            <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl bg-gray-50">
-                              <span className="text-sm text-gray-700"><strong className="text-gray-400 mr-1.5">{i + 1}.</strong>{f.aspecto}</span>
-                              <span className="text-xs font-bold whitespace-nowrap ml-2" style={{ color: G.green }}>{f.puntaje} pts</span>
-                            </div>
-                          ))}
-                        </div>
-                      : <SinDatos />}
+                    {datosFiltrados.facilidadesRanking.length ? (
+                      <div className="space-y-2">
+                        {datosFiltrados.facilidadesRanking.slice(0, 5).map((f, i) => (
+                          <div key={i} className="flex items-center justify-between py-2 px-3 rounded-xl bg-gray-50">
+                            <span className="text-sm text-gray-700"><strong className="text-gray-400 mr-1.5">{i + 1}.</strong>{f.aspecto}</span>
+                            <span className="text-xs font-bold whitespace-nowrap ml-2" style={{ color: G.green }}>{f.puntaje} pts</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <SinDatos />}
                   </div>
 
                   <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                     <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Perfil de Egreso: Competencias</h3>
                     <p className="text-xs text-gray-400 mb-3">Priorización al finalizar el ciclo formativo</p>
-                    {datosFiltrados.competenciasEgreso.length
-                      ? <ResponsiveContainer width="100%" height={280}>
-                          <BarChart data={datosFiltrados.competenciasEgreso.slice(0, 10)}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
-                            <XAxis dataKey="competencia" tick={{ fontSize: 9, angle: -15, textAnchor: 'end' }} height={50} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <Bar dataKey="total" name="Relevancia" fill={G.purple} radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      : <SinDatos />}
+                    {datosFiltrados.competenciasEgreso.length ? (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={datosFiltrados.competenciasEgreso.slice(0, 10)}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                          <XAxis dataKey="competencia" tick={{ fontSize: 9, angle: -15, textAnchor: 'end' }} height={50} />
+                          <YAxis tick={{ fontSize: 10 }} />
+                          <Tooltip />
+                          <Bar dataKey="total" name="Relevancia" fill={G.purple} radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : <SinDatos />}
                   </div>
                 </div>
 
-                {/* Conocimiento Cultura Barí */}
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
                   <h3 className="font-display font-bold text-gray-800 text-sm mb-1">Conocimiento sobre la Cultura Barí</h3>
                   <p className="text-xs text-gray-400 mb-3">Promedio reportado (escala 0-10) y disposición a aprender</p>
                   {(() => {
-                    const vals = datosFiltrados.participantes.map(p => p.conocimiento_bari).filter(v => v !== null && v !== undefined)
-                    const prom = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null
+                    const vals     = datosFiltrados.participantes.map(p => p.conocimiento_bari).filter(v => v !== null && v !== undefined)
+                    const prom     = vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : null
                     const desean   = datosFiltrados.participantes.filter(p => p.desea_conocer_bari === true).length
                     const noDesean = datosFiltrados.participantes.filter(p => p.desea_conocer_bari === false).length
                     return prom ? (
