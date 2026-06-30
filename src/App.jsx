@@ -1,4 +1,5 @@
 import { useExperiencia, PASOS } from './hooks/useExperiencia'
+import FormularioCerrado      from './components/FormularioCerrado'
 import Bienvenida          from './components/steps/Bienvenida'
 import Capsula             from './components/steps/Capsula'
 import Caracterizacion     from './components/steps/Caracterizacion'
@@ -10,6 +11,9 @@ import Certificado         from './components/steps/Certificado'
 import Dashboard           from './components/Dashboard'
 import DiagnosticoSupabase from './components/DiagnosticoSupabase'
 import './index.css'
+
+// ⚠️ Cambia esto a false para reabrir el formulario
+const FORMULARIO_CERRADO = true
 
 // Banner modo demo
 function DemoBanner() {
@@ -29,6 +33,10 @@ export default function App() {
   const path = window.location.pathname.replace(/\/$/, '').toLowerCase()
   if (path === '/dashboard')   return <Dashboard />
   if (path === '/diagnostico') return <DiagnosticoSupabase />
+
+  // ── Formulario cerrado ──────────────────────────────────────────────────
+  // Permite seguir entrando al dashboard y diagnóstico aunque esté cerrado
+  if (FORMULARIO_CERRADO) return <FormularioCerrado />
 
   return (
     <>
