@@ -366,15 +366,15 @@ export default function Dashboard() {
     const municipioDetalle = Object.entries(porMunicipio).map(([mun, tot]) => {
       const pMun = partFiltrados.filter(p => p.municipio === mun)
       return {
-        municipio: mun, total: tot,
-        completados:      pMun.filter(p => p.completado).length,
-        de_vereda:        pMun.filter(p => p.vereda).length,
-        de_corregimiento: pMun.filter(p => p.corregimiento).length,
-        urbanos:          pMun.filter(p => !p.vereda && !p.corregimiento).length,
-        estudiantes:      pMun.filter(p => p.tipo_actor === 'estudiante').length,
-        docentes:         pMun.filter(p => p.tipo_actor === 'docente').length,
-        comunidad:        pMun.filter(p => p.tipo_actor === 'comunidad').length,
-        organizaciones:   pMun.filter(p => p.tipo_actor === 'organizacion').length,
+        municipio: mun,
+        total: tot,
+        completados: pMun.filter(p => p.completado).length,
+        urbanos: pMun.filter(p => !p.vereda && !p.corregimiento).length,
+        rural: pMun.filter(p => p.vereda || p.corregimiento).length,
+        estudiantes: pMun.filter(p => p.tipo_actor === 'estudiante').length,
+        docentes: pMun.filter(p => p.tipo_actor === 'docente').length,
+        comunidad: pMun.filter(p => p.tipo_actor === 'comunidad').length,
+        organizaciones: pMun.filter(p => p.tipo_actor === 'organizacion').length,
       }
     }).sort((a, b) => b.total - a.total)
 
@@ -609,95 +609,117 @@ export default function Dashboard() {
 
   // ── Exportación CSV Respuestas Abiertas ──────────────────────────────────
   const procesarExportacionCSVAbiertas = () => {
-    if (!rawData.participantes?.length) return
+  if (!rawData.participantes?.length) return
 
-    const respuestasAbiertas = []
-    rawData.participantes.forEach(p => {
-      const fecha      = p.created_at ? new Date(p.created_at).toLocaleString('es-CO') : ''
-      const programa1  = rawData.progOrden?.find(po => po.participante_id === p.id && po.orden === 1)?.programa || ''
-      const progLabel  = PROG_LABEL[programa1] || programa1 || 'Sin programa'
-      const idParticipante = p.id
-      const tipoActor      = ACTOR_LABEL[p.tipo_actor] || p.tipo_actor || ''
+  const respuestasAbiertas = []
 
-      const ingresoUnicos = new Map()
-      ;(rawData.perfilIngreso || [])
-        .filter(i => i.participante_id === p.id && i.vision_territorial)
-        .forEach(i => {
-          const key = `${i.participante_id}__${i.programa}`
-          if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
-        })
-      ingresoUnicos.forEach(i => {
-        respuestasAbiertas.push({
-          'ID Participante':    idParticipante,
-          'Tipo de Actor':      tipoActor,
-          'Programa Académico': PROG_LABEL[i.programa] || i.programa || progLabel,
-          'Pregunta':           '¿Cómo imagina que este programa transformará el territorio?',
-          'Respuesta':          i.vision_territorial || '',
-          'Fecha de Registro':  fecha,
-        })
+  rawData.participantes.forEach(p => {
+    const fecha = p.created_at
+      ? new Date(p.created_at).toLocaleString('es-CO')
+      : ''
+
+    const programa1 = rawData.progOrden?.find(
+      po => po.participante_id === p.id && po.orden === 1
+    )?.programa || ''
+
+    const progLabel = PROG_LABEL[programa1] || programa1 || 'Sin programa'
+
+    const datosBase = {
+      'Fecha de registro': fecha,
+      'Nombre': p.nombre || '',
+      'Correo': p.correo || '',
+      'Municipio': p.municipio || '',
+      'Completó el formulario': p.completado ? 'Sí' : 'No'
+    }
+
+    // Visión territorial
+    const ingresoUnicos = new Map()
+
+    ;(rawData.perfilIngreso || [])
+      .filter(i => i.participante_id === p.id && i.vision_territorial)
+      .forEach(i => {
+        const key = `${i.participante_id}__${i.programa}`
+        if (!ingresoUnicos.has(key)) ingresoUnicos.set(key, i)
       })
 
-      const egresoUnicos = new Map()
-      ;(rawData.perfilEgreso || [])
-        .filter(e => e.participante_id === p.id && e.comentario_libre)
-        .forEach(e => {
-          const key = `${e.participante_id}__${e.programa}`
-          if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
-        })
-      egresoUnicos.forEach(e => {
-        respuestasAbiertas.push({
-          'ID Participante':    idParticipante,
-          'Tipo de Actor':      tipoActor,
-          'Programa Académico': PROG_LABEL[e.programa] || e.programa || progLabel,
-          'Pregunta':           `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
-          'Respuesta':          e.comentario_libre || '',
-          'Fecha de Registro':  fecha,
-        })
+    ingresoUnicos.forEach(i => {
+      respuestasAbiertas.push({
+        ...datosBase,
+        'Pregunta': '¿Cómo imagina que este programa transformará el territorio?',
+        'Respuesta': i.vision_territorial || '',
       })
-
-      const manifiestoFila = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-      if (manifiestoFila?.comentario_final) {
-        respuestasAbiertas.push({
-          'ID Participante':    idParticipante,
-          'Tipo de Actor':      tipoActor,
-          'Programa Académico': progLabel,
-          'Pregunta':           '¿Algún mensaje final para los constructores de esta universidad?',
-          'Respuesta':          manifiestoFila.comentario_final,
-          'Fecha de Registro':  fecha,
-        })
-      }
-
-      if (p.como_conocer_bari) {
-        respuestasAbiertas.push({
-          'ID Participante':    idParticipante,
-          'Tipo de Actor':      tipoActor,
-          'Programa Académico': progLabel,
-          'Pregunta':           '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
-          'Respuesta':          p.como_conocer_bari,
-          'Fecha de Registro':  fecha,
-        })
-      }
-
-      const manifiestoEmp = (rawData.manifiesto || []).find(m => m.participante_id === p.id)
-      if (manifiestoEmp) {
-        const EMP_CAMPO = { trabajo_social: 'empleabilidad_ts', agronomia: 'empleabilidad_ia', administracion: 'empleabilidad_adm' }
-        const campoEmp  = EMP_CAMPO[programa1]
-        const valorEmp  = campoEmp ? manifiestoEmp[campoEmp] : null
-        if (valorEmp) {
-          respuestasAbiertas.push({
-            'ID Participante':    idParticipante,
-            'Tipo de Actor':      tipoActor,
-            'Programa Académico': progLabel,
-            'Pregunta':           `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
-            'Respuesta':          valorEmp,
-            'Fecha de Registro':  fecha,
-          })
-        }
-      }
     })
 
-    exportarCSV(respuestasAbiertas, 'observatorio_catatumbo_respuestas_abiertas')
-  }
+    // Perfil de egreso
+    const egresoUnicos = new Map()
+
+    ;(rawData.perfilEgreso || [])
+      .filter(e => e.participante_id === p.id && e.comentario_libre)
+      .forEach(e => {
+        const key = `${e.participante_id}__${e.programa}`
+        if (!egresoUnicos.has(key)) egresoUnicos.set(key, e)
+      })
+
+    egresoUnicos.forEach(e => {
+      respuestasAbiertas.push({
+        ...datosBase,
+        'Pregunta': `¿Qué rasgo o característica especial considera que debería tener un profesional de ${PROG_LABEL[e.programa] || e.programa} de la Universidad Nacional del Catatumbo?`,
+        'Respuesta': e.comentario_libre || '',
+      })
+    })
+
+    // Mensaje final
+    const manifiestoFila = (rawData.manifiesto || []).find(
+      m => m.participante_id === p.id
+    )
+
+    if (manifiestoFila?.comentario_final) {
+      respuestasAbiertas.push({
+        ...datosBase,
+        'Pregunta': '¿Algún mensaje final para los constructores de esta universidad?',
+        'Respuesta': manifiestoFila.comentario_final,
+      })
+    }
+
+    // Cultura Barí
+    if (p.como_conocer_bari) {
+      respuestasAbiertas.push({
+        ...datosBase,
+        'Pregunta': '¿Cómo le gustaría que los estudiantes conocieran la cultura Barí?',
+        'Respuesta': p.como_conocer_bari,
+      })
+    }
+
+    // Empleabilidad
+    const manifiestoEmp = (rawData.manifiesto || []).find(
+      m => m.participante_id === p.id
+    )
+
+    if (manifiestoEmp) {
+      const EMP_CAMPO = {
+        trabajo_social: 'empleabilidad_ts',
+        agronomia: 'empleabilidad_ia',
+        administracion: 'empleabilidad_adm'
+      }
+
+      const campoEmp = EMP_CAMPO[programa1]
+      const valorEmp = campoEmp ? manifiestoEmp[campoEmp] : null
+
+      if (valorEmp) {
+        respuestasAbiertas.push({
+          ...datosBase,
+          'Pregunta': `Desde su experiencia, ¿en qué instituciones, organizaciones, empresas o sectores podrían trabajar los egresados de ${progLabel} en el Catatumbo?`,
+          'Respuesta': valorEmp,
+        })
+      }
+    }
+  })
+
+  exportarCSV(
+    respuestasAbiertas,
+    'observatorio_catatumbo_respuestas_abiertas'
+  )
+}
 
   // ── Eliminación de registros ──────────────────────────────────────────────
   const eliminarRegistros = async (tipo) => {
@@ -907,17 +929,28 @@ export default function Dashboard() {
                       <XAxis dataKey="municipio" tick={{ fontSize: 11 }} />
                       <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip /><Legend />
-                      <Bar dataKey="urbanos"          name="Zona Urbana"    stackId="t" fill={G.blue} />
-                      <Bar dataKey="de_corregimiento" name="Corregimientos" stackId="t" fill={G.purple} />
-                      <Bar dataKey="de_vereda"        name="Veredas"        stackId="t" fill={G.green} radius={[4, 4, 0, 0]} />
-                    </BarChart>
+                      <Bar
+    dataKey="urbanos"
+    name="Urbano"
+    stackId="t"
+    fill={G.blue}
+/>
+
+<Bar
+    dataKey="rural"
+    name="Rural"
+    stackId="t"
+    fill={G.green}
+    radius={[4,4,0,0]}
+/>
+</BarChart>
                   </ResponsiveContainer>
                 </div>
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr style={{ background: G.greenBg }} className="text-xs uppercase tracking-wider text-gray-700 font-bold border-b border-gray-100">
-                        {['Municipio', 'Total', 'Completados', 'Urbano', 'Vereda', 'Estudiante', 'Comunidad'].map(h => (
+                        {[ 'Municipio', 'Total', 'Completados', 'Urbano', 'Rural', 'Estudiante', 'Docente', 'Comunidad', 'Organización' ].map(h => (
                           <th key={h} className="p-4">{h}</th>
                         ))}
                       </tr>
@@ -929,9 +962,11 @@ export default function Dashboard() {
                           <td className="p-4 font-bold text-green-600">{m.total}</td>
                           <td className="p-4 text-gray-600">{m.completados}</td>
                           <td className="p-4 text-gray-600">{m.urbanos}</td>
-                          <td className="p-4 text-gray-600">{m.de_vereda}</td>
+                          <td className="p-4 text-gray-600">{m.rural}</td>
                           <td className="p-4 text-gray-600">{m.estudiantes}</td>
+                          <td className="p-4 text-gray-600">{m.docentes}</td>
                           <td className="p-4 text-gray-600">{m.comunidad}</td>
+                          <td className="p-4 text-gray-600">{m.organizaciones}</td>
                         </tr>
                       ))}
                     </tbody>
